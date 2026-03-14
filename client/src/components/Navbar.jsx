@@ -1,71 +1,83 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
 
-const navLinks = ["Home", "Features", "Simulator", "Roadmap", "Chat with Future Self"];
+const navLinks = ["How It Works", "Features", "Demo", "About"];
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 glass-navbar"
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 border-b border-border"
+      style={{
+        backdropFilter: "blur(12px)",
+        background: "rgba(15, 23, 42, 0.8)",
+      }}
     >
-      <div className="container mx-auto flex items-center justify-between px-6 py-4">
-        <a href="#" className="font-heading text-xl font-bold tracking-tight text-foreground">
-          Future<span className="text-gradient-primary">OS</span>
-        </a>
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-full bg-primary" />
+          <span className="font-serif text-lg text-foreground font-semibold tracking-tight">
+            AML Shield
+          </span>
+        </div>
 
-        {/* Desktop */}
+        {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <a
               key={link}
-              href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-sm font-body text-muted-foreground hover:text-foreground transition-colors duration-300"
+              href={`#${link.toLowerCase().replace(/\s/g, "-")}`}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {link}
             </a>
           ))}
         </div>
 
+        {/* CTA */}
+        <a
+          href="#demo"
+          className="hidden md:inline-flex btn-primary !py-2 !px-5 text-sm animate-glow-pulse"
+        >
+          View Demo
+        </a>
+
+        {/* Mobile toggle */}
         <button
-          onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden text-foreground"
+          onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {mobileOpen ? (
+              <path d="M6 6l12 12M6 18L18 6" />
+            ) : (
+              <path d="M3 6h18M3 12h18M3 18h18" />
+            )}
+          </svg>
         </button>
       </div>
 
-      {/* Mobile */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass-navbar border-t border-border/30"
-          >
-            <div className="container mx-auto px-6 py-4 flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link}
-                  href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
-                  onClick={() => setMobileOpen(false)}
-                  className="text-sm font-body text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {link}
-                </a>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-border px-6 py-4 flex flex-col gap-4" style={{ background: "rgba(15, 23, 42, 0.95)" }}>
+          {navLinks.map((link) => (
+            <a
+              key={link}
+              href={`#${link.toLowerCase().replace(/\s/g, "-")}`}
+              className="text-sm text-muted-foreground"
+              onClick={() => setMobileOpen(false)}
+            >
+              {link}
+            </a>
+          ))}
+          <a href="#demo" className="btn-primary !py-2 !px-5 text-sm text-center">
+            View Demo
+          </a>
+        </div>
+      )}
+    </nav>
   );
 };
 

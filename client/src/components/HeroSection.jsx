@@ -1,72 +1,98 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
-import UnicornScene from "unicornstudio-react";
+import { useEffect, useState } from "react";
+
+const datasets = ["IBM AML", "ICIJ Offshore Leaks", "FinCEN Files", "Panama Papers"];
 
 const HeroSection = () => {
-  return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Unicorn Studio Background */}
-      <div className="absolute inset-0 z-0">
-        <UnicornScene
-          projectId="F2sVTMkw2IIFU538t9Op"
-          sdkUrl="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.3/dist/unicornStudio.umd.js"
-          width="100%"
-          height="100%"
-          scale={1}
-          dpi={1.5}
-          lazyLoad={false}
-        />
-      </div>
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 100);
+    return () => clearTimeout(t);
+  }, []);
 
-      {/* Overlay gradient for text readability */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/40 to-background/60" />
+  const stagger = (i) => ({
+    opacity: loaded ? 1 : 0,
+    transform: loaded ? "translateY(0)" : "translateY(20px)",
+    transition: `opacity 0.5s ease ${i * 80}ms, transform 0.5s ease ${i * 80}ms`,
+  });
+
+  return (
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover opacity-30"
+        style={{ zIndex: 0 }}
+      >
+        <source src="/bg-video-graphP.webm" type="video/webm" />
+      </video>
+
+      {/* Radial glow */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 800px 500px at 50% 40%, rgba(34,197,94,0.08) 0%, transparent 70%)",
+          zIndex: 1,
+        }}
+      />
+
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-background/60" style={{ zIndex: 1 }} />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8"
-        >
-          <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-body text-muted-foreground">AI-Powered Life Planning Platform</span>
-        </motion.div>
+      <div className="relative z-10 mx-auto max-w-[640px] px-6 text-center pt-24">
+        <div style={stagger(0)}>
+          <span className="pill-badge">FINTECH · ANTI-MONEY LAUNDERING · FT2</span>
+        </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-6"
-        >
-          Plan Your Life
+        <h1 className="mt-8 text-5xl md:text-[64px] leading-[1.1] text-foreground" style={stagger(1)}>
+          Follow the money.
           <br />
-          <span className="text-gradient">Toward 2035</span>
-        </motion.h1>
+          <span className="font-bold">Unmask the network.</span>
+        </h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="max-w-2xl mx-auto text-lg md:text-xl font-body text-muted-foreground mb-10 leading-relaxed"
+        <p
+          className="mx-auto mt-6 max-w-[480px] text-[17px] leading-[1.7] text-muted-foreground"
+          style={stagger(2)}
         >
-          FutureOS simulates career paths, predicts skills, and lets you talk to your future self.
-        </motion.p>
+          AML Shield maps fund flows across shell company networks to surface
+          laundering patterns that single-transaction systems can't see.
+        </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+        <div style={stagger(3)} className="mt-8">
+          <a href="#demo" className="btn-primary animate-glow-pulse">
+            Get Started Today
+          </a>
+        </div>
+
+        <p
+          className="mt-6 text-xs text-muted-foreground font-mono"
+          style={stagger(4)}
         >
-          <button className="group px-8 py-4 bg-primary rounded-xl font-heading font-semibold text-primary-foreground btn-glow transition-all duration-300 flex items-center gap-2">
-            Start Planning
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-          <button className="px-8 py-4 glass-card glow-border glow-border-hover rounded-xl font-heading font-semibold text-foreground transition-all duration-300">
-            Explore Futures
-          </button>
-        </motion.div>
+          810,000+ entities analyzed · 28 typologies detected · Multi-hop graph
+          tracing
+        </p>
+
+        {/* Dataset logos */}
+        <div className="mt-10" style={stagger(5)}>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">
+            Used Datasets
+          </p>
+          <div className="flex items-center justify-center gap-8 flex-wrap">
+            {datasets.map((d) => (
+              <span
+                key={d}
+                className="text-sm font-mono text-foreground"
+                style={{ opacity: 0.4 }}
+              >
+                {d}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

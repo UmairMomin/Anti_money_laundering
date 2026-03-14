@@ -1,39 +1,35 @@
-import { Github, Twitter, Linkedin } from "lucide-react";
-
-const Footer = () => {
+const FooterCTA = () => {
   return (
-    <footer className="border-t border-border/30 py-12">
-      <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="font-heading text-lg font-bold text-foreground">
-            Future<span className="text-gradient-primary">OS</span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {["Features", "Simulator", "Roadmap", "Contact"].map((link) => (
-              <a key={link} href="#" className="text-sm font-body text-muted-foreground hover:text-foreground transition-colors">
-                {link}
-              </a>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-4">
-            {[Twitter, Github, Linkedin].map((Icon, i) => (
-              <a key={i} href="#" className="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/20 transition-all">
-                <Icon className="w-4 h-4" />
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-xs font-body text-muted-foreground">
-            © 2025 FutureOS. All rights reserved.
-          </p>
+    <section className="py-24 md:py-32 bg-background">
+      <div className="mx-auto max-w-3xl px-6 text-center">
+        <h2 className="text-3xl md:text-[44px] leading-[1.15] font-serif text-foreground">
+          Built to catch what
+          <br />
+          <span className="font-bold">other systems miss.</span>
+        </h2>
+        <p className="mt-4 text-base text-muted-foreground">
+          AML Shield — Track FT2 · FinTech Hackathon 2025
+        </p>
+        <div className="mt-8">
+          <a href="#demo" className="btn-primary animate-glow-pulse">
+            Explore the Demo ↗
+          </a>
         </div>
       </div>
-    </footer>
+
+      {/* Footer bar */}
+      <div className="mt-24 border-t border-border">
+        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
+            <span className="font-serif text-foreground text-sm">AML Shield</span>
+          </div>
+          <p>© 2025 · FT2 · Adaptive Anti-Money Laundering</p>
+          <a href="#" className="text-primary hover:underline">GitHub ↗</a>
+        </div>
+      </div>
+    </section>
   );
 };
 
-export default Footer;
+export default FooterCTA;
