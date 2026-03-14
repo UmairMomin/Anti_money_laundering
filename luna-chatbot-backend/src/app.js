@@ -69,29 +69,29 @@ const allowedOrigins = [
   'https://lunnaa.vercel.app' //Lunna
 ];
 
-// Enable CORS for all routes
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
 
-  // In development, allow all localhost origins
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const isLocalhost =
+      origin.includes('localhost') || origin.includes('127.0.0.1');
 
-  // Check if the request origin is in the allowed origins or is localhost in dev
-  if (allowedOrigins.includes(origin) || (isDevelopment && isLocalhost)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
+    if (allowedOrigins.includes(origin) || (isDevelopment && isLocalhost)) {
+      return callback(null, true);
+    }
 
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    return res.status(200).end();
-  }
+    return callback(new Error(`CORS not allowed for origin: ${origin}`), false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
 
-  next();
-});
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // Routes

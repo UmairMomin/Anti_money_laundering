@@ -174,17 +174,18 @@ export function SignupForm({
         return;
       }
 
-      if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      if (!googleClientId) {
         toast.error("Missing Google client ID", {
           description:
-            "Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment.",
+            "Please set GOOGLE_CLIENT_ID (or NEXT_PUBLIC_GOOGLE_CLIENT_ID) in your environment.",
         });
         setIsGoogleLoading(false);
         return;
       }
 
       const client = google.accounts.oauth2.initCodeClient({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        client_id: googleClientId,
         scope: "openid email profile",
         ux_mode: "popup",
         callback: async (response: { code?: string; error?: string }) => {
