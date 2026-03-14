@@ -240,7 +240,7 @@ export function MessageInput({
         onStopRecording={stopRecording}
       />
 
-      <div className="relative flex w-full items-center space-x-2">
+      <div className="relative flex w-full items-center">
         <div className="relative flex-1">
           <textarea
             aria-label="Write your prompt here"
@@ -249,17 +249,22 @@ export function MessageInput({
             onPaste={onPaste}
             onKeyDown={onKeyDown}
             className={cn(
-              "z-10 w-full grow resize-none rounded-xl border border-input bg-card p-3 pr-24 text-sm ring-offset-background transition-[border] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+              "z-10 w-full grow resize-none rounded-xl border border-input bg-card p-3 pr-24 text-sm ring-offset-background transition-[border] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 overflow-x-hidden",
               showFileList && "pb-16",
-              className
+              className,
             )}
             {...(props.allowAttachments
-              ? omit(props, ["allowAttachments", "files", "setFiles", "inputRef"])
+              ? omit(props, [
+                  "allowAttachments",
+                  "files",
+                  "setFiles",
+                  "inputRef",
+                ])
               : omit(props, ["allowAttachments", "inputRef"]))}
           />
 
           {props.allowAttachments && (
-            <div className="absolute inset-x-3 bottom-0 z-20 overflow-x-scroll py-3">
+            <div className="absolute inset-x-3 bottom-0 z-20 overflow-x-hidden py-3">
               <div className="flex space-x-3">
                 <AnimatePresence mode="popLayout">
                   {props.files?.map((file) => {
@@ -269,17 +274,17 @@ export function MessageInput({
                         file={file}
                         onRemove={() => {
                           props.setFiles((files) => {
-                            if (!files) return null
+                            if (!files) return null;
 
                             const filtered = Array.from(files).filter(
-                              (f) => f !== file
-                            )
-                            if (filtered.length === 0) return null
-                            return filtered
-                          })
+                              (f) => f !== file,
+                            );
+                            if (filtered.length === 0) return null;
+                            return filtered;
+                          });
                         }}
                       />
-                    )
+                    );
                   })}
                 </AnimatePresence>
               </div>
@@ -295,7 +300,10 @@ export function MessageInput({
               type="button"
               size="sm"
               variant={includeYouTube ? "default" : "outline"}
-              className={cn("h-8 gap-1 px-2.5", includeYouTube ? "" : "opacity-70")}
+              className={cn(
+                "h-8 gap-1 px-2.5",
+                includeYouTube ? "" : "opacity-70",
+              )}
               aria-label="Toggle tools menu"
               aria-haspopup="menu"
               aria-expanded={showYouTubeMenu}
@@ -327,7 +335,7 @@ export function MessageInput({
                       id="message-input-youtube-switch"
                       checked={includeYouTube}
                       onCheckedChange={(checked: boolean) => {
-                        onToggleYouTube(checked)
+                        onToggleYouTube(checked);
                       }}
                       aria-label="Toggle YouTube tool"
                     />
@@ -349,7 +357,7 @@ export function MessageInput({
                       id="message-input-image-switch"
                       checked={includeImageSearch}
                       onCheckedChange={(checked: boolean) => {
-                        onToggleImageSearch(checked)
+                        onToggleImageSearch(checked);
                       }}
                       aria-label="Toggle image search"
                     />
@@ -361,9 +369,9 @@ export function MessageInput({
                     role="menuitem"
                     className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                     onClick={async () => {
-                      const files = await showFileUploadDialog()
+                      const files = await showFileUploadDialog();
                       if (files) {
-                        addFiles(files)
+                        addFiles(files);
                       }
                     }}
                   >
@@ -435,7 +443,7 @@ export function MessageInput({
         onStopRecording={stopRecording}
       />
     </div>
-  )
+  );
 }
 MessageInput.displayName = "MessageInput"
 
