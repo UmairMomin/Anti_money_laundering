@@ -780,6 +780,23 @@ const HeroSection = () => {
               >
                 How it works
               </a>
+              <a
+                href="/chat"
+                className="sec-btn"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  padding: "13px 22px",
+                  borderRadius: 8,
+                  textDecoration: "none",
+                  letterSpacing: ".02em",
+                  transition: "all .2s ease",
+                  border: "1px solid rgba(var(--primary-rgb),.2)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                Chat with our AI
+              </a>
             </div>
 
             <div

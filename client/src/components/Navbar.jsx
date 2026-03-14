@@ -33,6 +33,9 @@ const Navbar = () => {
               {link}
             </a>
           ))}
+          <a href="/chat" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            Chat with our AI
+          </a>
         </div>
 
         {/* CTA */}
@@ -58,7 +61,7 @@ const Navbar = () => {
           </svg>
         </button>
       </div>
-
+w
       {/* Mobile menu */}
       {mobileOpen && (
         <div
