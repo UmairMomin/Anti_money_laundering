@@ -460,12 +460,12 @@ export default function ChatPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
 
         .chat-root {
-          --accent: #B75A39;
-          --accent-glow: rgba(183, 90, 57, 0.35);
-          --accent-dim: rgba(183, 90, 57, 0.12);
+          --accent: #34b27b;
+          --accent-glow: rgba(52, 178, 123, 0.35);
+          --accent-dim: rgba(52, 178, 123, 0.12);
           --glass-bg: rgba(255, 255, 255, 0.06);
           --glass-border: rgba(255, 255, 255, 0.1);
           --glass-blur: blur(24px);
@@ -473,8 +473,8 @@ export default function ChatPage() {
           --panel-border: rgba(255,255,255,0.08);
           --text-primary: rgba(240, 235, 228, 0.95);
           --text-secondary: rgba(200, 190, 178, 0.6);
-          --font-display: 'Syne', sans-serif;
-          --font-body: 'Space Grotesk', sans-serif;
+          --font-display: 'Lora', serif;
+          --font-body: 'Plus Jakarta Sans', sans-serif;
         }
 
         .chat-root * { font-family: var(--font-body); box-sizing: border-box; }
@@ -511,7 +511,7 @@ export default function ChatPage() {
 
         .hud-header {
           background: rgba(8, 8, 14, 0.78);
-          border-bottom: 1px solid rgba(183, 90, 57, 0.18);
+          border-bottom: 1px solid rgba(52, 178, 123, 0.18);
           backdrop-filter: blur(32px) saturate(1.4);
           -webkit-backdrop-filter: blur(32px) saturate(1.4);
         }
@@ -548,14 +548,14 @@ export default function ChatPage() {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(183,90,57,0.15), transparent);
+          background: linear-gradient(135deg, rgba(52,178,123,0.15), transparent);
           opacity: 0;
           transition: opacity 0.2s;
         }
         .hud-btn:hover {
-          color: #e8d5c6;
-          border-color: rgba(183, 90, 57, 0.35);
-          box-shadow: 0 0 12px rgba(183, 90, 57, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+          color: #c8f0e0;
+          border-color: rgba(52, 178, 123, 0.35);
+          box-shadow: 0 0 12px rgba(52, 178, 123, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
         }
         .hud-btn:hover::after { opacity: 1; }
 
@@ -576,16 +576,16 @@ export default function ChatPage() {
           transition: all 0.2s;
         }
         .hud-profile-btn:hover {
-          color: #e8d5c6;
-          border-color: rgba(183, 90, 57, 0.35);
-          box-shadow: 0 0 16px rgba(183, 90, 57, 0.2);
+          color: #c8f0e0;
+          border-color: rgba(52, 178, 123, 0.35);
+          box-shadow: 0 0 16px rgba(52, 178, 123, 0.2);
         }
 
         .hud-avatar {
           width: 26px;
           height: 26px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #B75A39, #7a3d26);
+          background: linear-gradient(135deg, #34b27b, #1a5c3d);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -593,7 +593,7 @@ export default function ChatPage() {
           font-size: 0.7rem;
           font-weight: 700;
           color: white;
-          border: 1px solid rgba(183, 90, 57, 0.5);
+          border: 1px solid rgba(52, 178, 123, 0.5);
           flex-shrink: 0;
         }
 
@@ -604,10 +604,10 @@ export default function ChatPage() {
           top: calc(100% + 10px);
           min-width: 300px;
           background: rgba(10, 10, 18, 0.94);
-          border: 1px solid rgba(183, 90, 57, 0.2);
+          border: 1px solid rgba(52, 178, 123, 0.2);
           border-radius: 12px;
           padding: 12px;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 40px rgba(183,90,57,0.08);
+          box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 40px rgba(52,178,123,0.08);
           backdrop-filter: blur(32px);
           -webkit-backdrop-filter: blur(32px);
         }
@@ -636,8 +636,8 @@ export default function ChatPage() {
           text-align: left;
         }
         .hud-dropdown-item:hover {
-          background: rgba(183, 90, 57, 0.12);
-          color: #e8d5c6;
+          background: rgba(52, 178, 123, 0.12);
+          color: #c8f0e0;
         }
 
         .conv-item {
@@ -648,7 +648,7 @@ export default function ChatPage() {
           transition: background 0.15s;
         }
         .conv-item:hover { background: rgba(255,255,255,0.04); }
-        .conv-item.active { background: rgba(183, 90, 57, 0.1); }
+        .conv-item.active { background: rgba(52, 178, 123, 0.1); }
 
         .conv-btn {
           flex: 1;
@@ -685,7 +685,7 @@ export default function ChatPage() {
           transition: all 0.15s;
           flex-shrink: 0;
         }
-        .conv-delete:hover { background: rgba(220,50,50,0.12); color: #f87171; }
+        .conv-delete:hover { background: rgba(229,75,79,0.12); color: #e54b4f; }
 
         .search-input {
           width: 100%;
@@ -700,16 +700,16 @@ export default function ChatPage() {
           transition: border-color 0.2s;
         }
         .search-input::placeholder { color: rgba(180,170,160,0.35); }
-        .search-input:focus { border-color: rgba(183,90,57,0.4); box-shadow: 0 0 0 3px rgba(183,90,57,0.08); }
+        .search-input:focus { border-color: rgba(52,178,123,0.4); box-shadow: 0 0 0 3px rgba(52,178,123,0.08); }
 
         /* Welcome screen */
         .welcome-panel {
           background: rgba(10, 10, 18, 0.72);
-          border: 1px solid rgba(183, 90, 57, 0.15);
+          border: 1px solid rgba(52, 178, 123, 0.15);
           border-radius: 20px;
           backdrop-filter: blur(40px) saturate(1.3);
           -webkit-backdrop-filter: blur(40px) saturate(1.3);
-          box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 60px rgba(183,90,57,0.06) inset;
+          box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 60px rgba(52,178,123,0.06) inset;
           padding: 48px 40px 40px;
           text-align: center;
           position: relative;
@@ -723,7 +723,7 @@ export default function ChatPage() {
           transform: translateX(-50%);
           width: 300px;
           height: 300px;
-          background: radial-gradient(circle, rgba(183,90,57,0.12), transparent 70%);
+          background: radial-gradient(circle, rgba(52,178,123,0.12), transparent 70%);
           pointer-events: none;
         }
 
@@ -732,14 +732,14 @@ export default function ChatPage() {
           align-items: center;
           gap: 8px;
           padding: 5px 14px;
-          background: rgba(183,90,57,0.1);
-          border: 1px solid rgba(183,90,57,0.25);
+          background: rgba(52,178,123,0.1);
+          border: 1px solid rgba(52,178,123,0.25);
           border-radius: 20px;
           font-size: 0.6rem;
           font-weight: 600;
           letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: rgba(200, 150, 110, 0.8);
+          color: rgba(180, 220, 200, 0.8);
           margin-bottom: 28px;
         }
 
@@ -752,7 +752,7 @@ export default function ChatPage() {
           color: var(--text-primary);
         }
         .welcome-greeting .name-highlight {
-          background: linear-gradient(135deg, #e8c4a8, #B75A39, #7a3d26);
+          background: linear-gradient(135deg, #a8e8d0, #34b27b, #1a5c3d);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -786,23 +786,23 @@ export default function ChatPage() {
           transition: all 0.2s;
         }
         .welcome-pill:hover {
-          border-color: rgba(183,90,57,0.3);
-          color: rgba(220,200,185,0.75);
-          background: rgba(183,90,57,0.07);
+          border-color: rgba(52,178,123,0.3);
+          color: rgba(200,230,215,0.9);
+          background: rgba(52,178,123,0.07);
         }
         .welcome-pill-dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #B75A39;
-          box-shadow: 0 0 6px rgba(183,90,57,0.6);
+          background: #34b27b;
+          box-shadow: 0 0 6px rgba(52,178,123,0.6);
           flex-shrink: 0;
         }
 
         /* Messages panel */
         .messages-panel {
           background: rgba(8, 8, 16, 0.68);
-          border: 1px solid rgba(183,90,57,0.12);
+          border: 1px solid rgba(52,178,123,0.12);
           border-radius: 16px;
           padding: 24px;
           backdrop-filter: blur(32px);
@@ -814,7 +814,7 @@ export default function ChatPage() {
         /* Footer input area */
         .hud-footer {
           background: rgba(8, 8, 14, 0.85);
-          border-top: 1px solid rgba(183,90,57,0.15);
+          border-top: 1px solid rgba(52,178,123,0.15);
           backdrop-filter: blur(32px) saturate(1.4);
           -webkit-backdrop-filter: blur(32px) saturate(1.4);
         }
@@ -824,13 +824,13 @@ export default function ChatPage() {
           inset-x-0;
           top: -1px;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(183,90,57,0.4), transparent);
+          background: linear-gradient(90deg, transparent, rgba(52,178,123,0.4), transparent);
         }
 
         /* Mobile menu */
         .mobile-menu-panel {
           background: rgba(8, 8, 16, 0.95);
-          border: 1px solid rgba(183,90,57,0.2);
+          border: 1px solid rgba(52,178,123,0.2);
           border-radius: 16px;
           backdrop-filter: blur(40px);
           -webkit-backdrop-filter: blur(40px);
@@ -840,11 +840,11 @@ export default function ChatPage() {
         /* Scrollbar */
         .hud-scroll::-webkit-scrollbar { width: 4px; }
         .hud-scroll::-webkit-scrollbar-track { background: transparent; }
-        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(183,90,57,0.25); border-radius: 2px; }
-        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(183,90,57,0.4); }
+        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(52,178,123,0.25); border-radius: 2px; }
+        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(52,178,123,0.4); }
 
         /* Pulse dot */
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(183,90,57,0.8); } 50% { opacity: 0.4; box-shadow: 0 0 2px rgba(183,90,57,0.2); } }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(52,178,123,0.8); } 50% { opacity: 0.4; box-shadow: 0 0 2px rgba(52,178,123,0.2); } }
         .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
 
         /* Spin animation */
@@ -854,7 +854,7 @@ export default function ChatPage() {
         /* Horizontal divider line */
         .hud-divider {
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(183,90,57,0.25), transparent);
+          background: linear-gradient(90deg, transparent, rgba(52,178,123,0.25), transparent);
           margin: 10px 0;
         }
       `}</style>
@@ -880,7 +880,7 @@ export default function ChatPage() {
           {/* Dark vignette overlay */}
           <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(5,5,10,0.55) 0%, rgba(5,5,10,0.88) 80%)" }} />
           {/* Subtle grid */}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(rgba(183,90,57,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(183,90,57,0.04) 1px, transparent 1px)", backgroundSize: "80px 80px", opacity: 0.4 }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(rgba(52,178,123,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(52,178,123,0.04) 1px, transparent 1px)", backgroundSize: "80px 80px", opacity: 0.4 }} />
         </div>
 
         {/* ── Header ── */}
@@ -893,8 +893,8 @@ export default function ChatPage() {
 
             {/* Left: back + logo */}
             <div className="flex items-center gap-3">
-              <Image src="/logo14.png" alt="RegIntel logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(183,90,57,0.3)" }} />
-              <span className="hud-logo-text">Future <span style={{ color: "#B75A39" }}>OS</span></span>
+              <Image src="/logo14.png" alt="RegIntel logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(52,178,123,0.3)" }} />
+              <span className="hud-logo-text">AML Shield <span style={{ color: "#34b27b" }}></span></span>
             </div>
 
             {/* Desktop center actions */}
@@ -965,7 +965,7 @@ export default function ChatPage() {
                                   <button className="conv-btn" onClick={() => handleConversationSelect(conv.id)} type="button">
                                     <div className="conv-title">{conv.title || `Chat ${conv.id.slice(0, 6)}`}</div>
                                     {ts && <div className="conv-date">{ts}</div>}
-                                    {loadingConversationId === conv.id && <div style={{ fontSize: "0.65rem", color: "#B75A39", marginTop: 2 }}>Loading…</div>}
+                                    {loadingConversationId === conv.id && <div style={{ fontSize: "0.65rem", color: "#34b27b", marginTop: 2 }}>Loading…</div>}
                                   </button>
                                   <button className="conv-delete" onClick={(e) => handleDeleteConversation(conv.id, e)} title="Delete" type="button">
                                     <Trash2 style={{ width: 13, height: 13 }} />
@@ -999,7 +999,7 @@ export default function ChatPage() {
                   onClick={() => { setIsHistoryOpen(false); setIsProfileOpen((v) => !v) }}
                 >
                   {userAvatar
-                    ? <img src={userAvatar} alt={displayName} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(183,90,57,0.4)" }} referrerPolicy="no-referrer" />
+                    ? <img src={userAvatar} alt={displayName} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(52,178,123,0.4)" }} referrerPolicy="no-referrer" />
                     : <div className="hud-avatar">{userInitial}</div>
                   }
                   <span style={{ fontSize: "0.75rem", fontWeight: 500 }}>Profile</span>
@@ -1012,7 +1012,7 @@ export default function ChatPage() {
                     <div className="corner-bracket bl" /><div className="corner-bracket br" />
                     <div className="hud-dropdown-header" style={{ display: "flex", gap: 12, alignItems: "center" }}>
                       {userAvatar
-                        ? <img src={userAvatar} alt={displayName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(183,90,57,0.4)", flexShrink: 0 }} referrerPolicy="no-referrer" />
+                        ? <img src={userAvatar} alt={displayName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(52,178,123,0.4)", flexShrink: 0 }} referrerPolicy="no-referrer" />
                         : <div className="hud-avatar" style={{ width: 44, height: 44, fontSize: "1rem" }}>{userInitial}</div>
                       }
                       <div style={{ minWidth: 0 }}>
@@ -1062,12 +1062,12 @@ export default function ChatPage() {
                       <div style={{ position: "absolute", top: "50%", left: "50%", width: "28rem", height: "28rem", pointerEvents: "none", zIndex: 0 }}
                         className="spin-slow"
                       >
-                        <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "conic-gradient(from 0deg, rgba(183,90,57,0.15), transparent, rgba(183,90,57,0.1), transparent)", filter: "blur(20px)", opacity: 0.4 }} />
+                        <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "conic-gradient(from 0deg, rgba(52,178,123,0.15), transparent, rgba(52,178,123,0.1), transparent)", filter: "blur(20px)", opacity: 0.4 }} />
                       </div>
 
                       <div style={{ position: "relative", zIndex: 1 }}>
                         <div className="welcome-badge">
-                          <span className="pulse-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#B75A39" }} />
+                          <span className="pulse-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#34b27b" }} />
                           Neural console online
                         </div>
 
@@ -1144,11 +1144,11 @@ export default function ChatPage() {
           style={{ zIndex: 30 }}
         >
           {/* Top glow line */}
-          <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg, transparent, rgba(183,90,57,0.45), transparent)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg, transparent, rgba(52,178,123,0.45), transparent)", pointerEvents: "none" }} />
 
           <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6" style={{ position: "relative" }}>
             {/* Ambient glow behind input */}
-            <div style={{ position: "absolute", insetX: "10%", top: 0, height: 60, background: "radial-gradient(ellipse at 50% 0%, rgba(183,90,57,0.18), transparent 70%)", pointerEvents: "none", filter: "blur(12px)" }} />
+            <div style={{ position: "absolute", insetX: "10%", top: 0, height: 60, background: "radial-gradient(ellipse at 50% 0%, rgba(52,178,123,0.18), transparent 70%)", pointerEvents: "none", filter: "blur(12px)" }} />
             <ChatForm isPending={isGenerating} handleSubmit={handleSubmit}>
               {({ files, setFiles }) => (
                 <div style={{ position: "relative" }}>
