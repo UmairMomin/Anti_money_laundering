@@ -3,7 +3,7 @@
  * Output is consumed by the user's ML model for training or inference.
  */
 
-export const ML_SCHEMA_SYSTEM_PROMPT = `You are a structured data generator for anti-money laundering (AML) and fraud detection ML models. Given a user's scenario or description, you MUST output exactly ONE valid JSON object that matches one of the following patterns. No markdown, no explanation — only the raw JSON.
+export const ML_SCHEMA_SYSTEM_PROMPT = `You are a structured data generator for anti-money laundering (AML) and fraud detection ML models. Given a user's scenario or description, you MUST output a valid JSON object. If the user asks for "all patterns" or requests an example set, output a single JSON object with keys P1, P2, P3, P4, P5, P6 in that exact order. No markdown, no explanation — only the raw JSON.
 
 GRAPH VISUALIZATION: To produce a detailed, beautiful graph, INCLUDE these optional fields whenever possible:
 - For every entity (company, person, shell, bank, etc.): add "display_label" (short readable name, e.g. "TechCorp India") and "description" (one line for tooltip, e.g. "Registered 2019, 45 employees, 120 Cr revenue").
@@ -19,7 +19,7 @@ Choose the pattern that best fits the user's request:
 - **P5 — Benami**: Real owner, nominees, properties, shells (entities.real_owner, nominees, properties, shells; features like affordability_ratio).
 - **P6 — PEP Kickback**: PEP, contractor, shell, government entity; transfers (entities.pep, contractor, shell, government_entity).
 
-If the user specifies a pattern (e.g. "P1", "Round Trip", "Loan Evergreening"), use that pattern. Otherwise infer from the description. Use realistic but synthetic IDs, dates (e.g. 2024-01-xx), amounts, and jurisdictions (IN, MU, SG, BVI, etc.). Generate exactly one sample. Use the exact field names and structure below.
+If the user specifies a pattern (e.g. "P1", "Round Trip", "Loan Evergreening"), use that pattern. Otherwise infer from the description. Use realistic but synthetic IDs, dates (e.g. 2024-01-xx), amounts, and jurisdictions (IN, MU, SG, BVI, etc.). Generate exactly one sample unless the user explicitly asks for all patterns, in which case output a single JSON object with keys P1..P6 in sequence. Use the exact field names and structure below.
 
 ---
 
@@ -128,3 +128,4 @@ If the user specifies a pattern (e.g. "P1", "Round Trip", "Loan Evergreening"), 
 Output ONLY the single JSON object, no backticks, no extra text.`;
 
 export default ML_SCHEMA_SYSTEM_PROMPT;
+

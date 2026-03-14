@@ -36,7 +36,7 @@ console.log("fwefweiofjw");
 // console.log("fwefweiofjw");
       const oauth2 = google.oauth2({ auth: oauth2Client, version: "v2" });
       // console.log("fwefweiofjw");
-      const data = await oauth2.userinfo.get();
+      const {data} = await oauth2.userinfo.get();
 // console.log(data,"fwefweiofjw");
       resolvedName = resolvedName || data?.name || data?.given_name;
       resolvedEmail = resolvedEmail || data?.email;
@@ -49,9 +49,9 @@ console.log("fwefweiofjw");
         .status(400)
         .json({ message: "Please provide name, email, and password" });
     }
-    console.log("fwefweiofjw");
     let user = await User.findOne({ email: resolvedEmail });
-
+    
+console.log("fwefweiofjw");
     if (!user) {
       user = await User.create({
         name: resolvedName,
