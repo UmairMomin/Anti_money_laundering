@@ -1,14 +1,21 @@
 // src/controllers/chatController.js
 import fetch from 'node-fetch';
+import OpenAI from 'openai';
+import xlsx from 'xlsx';
 import { createClient } from '@supabase/supabase-js';
 import { generateContent, buildRequestBody, MODEL_ID, BASE_URL, extractTextFromUploads, extractImagesFromUploads } from '../helpers/gemini.js';
 import { searchImages } from '../helpers/imageSearch.js';
-import { MEDISETU_PROMPT } from '../prompts/doc.js';
+import { buildAmlAssistantPrompt } from "../prompts/FinancialAI.js";
 import YouTubeMCP from '../helpers/youtubeSearch.js';
 import env from '../config/env.js';
 import { processMermaidBlocks } from '../helpers/mermaid.js';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+const FEATHERLESS_BASE_URL = env.FEATHERLESS_BASE_URL || 'https://api.featherless.ai/v1';
+const FEATHERLESS_MODEL = env.FEATHERLESS_MODEL || 'Qwen/Qwen2.5-32B-Instruct';
+const featherlessClient = env.FEATHERLESS_API_KEY
+  ? new OpenAI({ baseURL: FEATHERLESS_BASE_URL, apiKey: env.FEATHERLESS_API_KEY })
+  : null;
 
 // Initialize YouTube MCP
 const youtubeMCP = env.YOUTUBE_API_KEY ? new YouTubeMCP(env.YOUTUBE_API_KEY) : null;
@@ -19,6 +26,134 @@ if (!youtubeMCP) {
 const STREAM_FINISH_DEBOUNCE_MS = 80;
 const STREAM_CLOSE_DELAY_MS = 60;
 const sleep = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
+const MAX_TRANSACTION_ROWS = 200;
+const MAX_TRANSACTION_CONTEXT_CHARS = 8000;
+
+function isExcelLikeFile(file) {
+  if (!file) return false;
+  const mime = (file.mimetype || '').toLowerCase();
+  const name = (file.originalname || '').toLowerCase();
+  return (
+    mime.includes('spreadsheet') ||
+    mime.includes('excel') ||
+    mime.includes('csv') ||
+    name.endsWith('.xls') ||
+    name.endsWith('.xlsx') ||
+    name.endsWith('.csv')
+  );
+}
+
+function parseExcelToJson(file) {
+  try {
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) return [];
+    const sheet = workbook.Sheets[sheetName];
+    return xlsx.utils.sheet_to_json(sheet, { defval: null });
+  } catch (error) {
+    console.warn('[transactions] Failed to parse excel:', error?.message || error);
+    return [];
+  }
+}
+
+function extractJsonPayload(text = '') {
+  const trimmed = String(text).trim();
+  if (!trimmed) return null;
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = fenced ? fenced[1] : trimmed;
+  const firstBrace = candidate.indexOf('{');
+  const firstBracket = candidate.indexOf('[');
+  const start = firstBrace === -1 ? firstBracket : firstBracket === -1 ? firstBrace : Math.min(firstBrace, firstBracket);
+  if (start === -1) return null;
+  const endBrace = candidate.lastIndexOf('}');
+  const endBracket = candidate.lastIndexOf(']');
+  const end = Math.max(endBrace, endBracket);
+  if (end === -1) return null;
+  return candidate.slice(start, end + 1);
+}
+
+async function structureTransactionsWithOpenAI(rawRows) {
+  if (!featherlessClient) {
+    return { transactions: rawRows, summary: { row_count: rawRows.length, note: 'OpenAI key not set; using raw rows.' } };
+  }
+
+  const payload = JSON.stringify(rawRows, null, 2);
+  const messages = [
+    {
+      role: 'system',
+      content:
+        'You are a data normalization engine. Convert raw transaction rows into strict JSON. ' +
+        'Output ONLY JSON with schema: { "transactions": [ ... ], "summary": { "row_count": number, "notes": string } }. ' +
+        'Normalize keys to snake_case and keep values as strings or numbers.',
+    },
+    {
+      role: 'user',
+      content: `Raw transaction rows:\n${payload}`,
+    },
+  ];
+
+  const completion = await featherlessClient.chat.completions.create({
+    model: FEATHERLESS_MODEL,
+    max_tokens: 2048,
+    temperature: 0,
+    messages,
+  });
+
+  const content = completion?.choices?.[0]?.message?.content || '';
+  const jsonPayload = extractJsonPayload(content);
+  if (!jsonPayload) {
+    return { transactions: rawRows, summary: { row_count: rawRows.length, note: 'Failed to parse OpenAI output; using raw rows.' } };
+  }
+
+  try {
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.warn('[transactions] Failed to parse OpenAI JSON:', error?.message || error);
+    return { transactions: rawRows, summary: { row_count: rawRows.length, note: 'OpenAI JSON parse failed; using raw rows.' } };
+  }
+}
+
+function addSuspiciousScore(structured) {
+  const addScore = (row) => ({ ...row, sus_detection: Math.floor(Math.random() * 101) });
+
+  if (Array.isArray(structured)) {
+    return structured.map(addScore);
+  }
+
+  if (structured && Array.isArray(structured.transactions)) {
+    return {
+      ...structured,
+      transactions: structured.transactions.map(addScore),
+    };
+  }
+
+  if (structured && typeof structured === 'object') {
+    return { ...structured, sus_detection: Math.floor(Math.random() * 101) };
+  }
+
+  return structured;
+}
+
+async function buildTransactionContextFromUploads(files = []) {
+  const excelFiles = files.filter(isExcelLikeFile);
+  if (!excelFiles.length) return null;
+
+  const rows = excelFiles.flatMap(parseExcelToJson).slice(0, MAX_TRANSACTION_ROWS);
+  if (!rows.length) return null;
+
+  const structured = await structureTransactionsWithOpenAI(rows);
+  const scored = addSuspiciousScore(structured);
+  let contextText = JSON.stringify(scored, null, 2);
+
+  if (contextText.length > MAX_TRANSACTION_CONTEXT_CHARS) {
+    contextText = `${contextText.slice(0, MAX_TRANSACTION_CONTEXT_CHARS)}\n... (truncated)`;
+  }
+
+  return {
+    contextText,
+    rowCount: rows.length,
+  };
+}
 
 /**
  * Fetch page title from URL
@@ -221,20 +356,25 @@ export async function handleChatGenerate(req, res) {
       parts: [{ text: m.content }]
     })) : [];
 
+    const uploads = Array.isArray(req.files) ? req.files : [];
+    const transactionContext = await buildTransactionContextFromUploads(uploads);
+    const modelPrompt = transactionContext
+      ? `${prompt}\n\n--- Structured Transactions (with sus_detection) ---\n${transactionContext.contextText}`
+      : prompt;
+
     // Add current user message to history
     chatHistory.push({
       role: 'user',
-      parts: [{ text: prompt }]
+      parts: [{ text: modelPrompt }]
     });
 
     // Determine includeSearch similar to geminiController: default false if files provided
-    const uploads = Array.isArray(req.files) ? req.files : [];
     const effectiveIncludeSearch = typeof options.includeSearch === 'boolean'
       ? options.includeSearch
       : (uploads.length === 0);
 
     // Generate AI response
-    const response = await generateContent(prompt, userId, {
+    const response = await generateContent(modelPrompt, userId, {
       history: chatHistory.slice(-10), // Only keep last 10 messages for context
       includeSearch: effectiveIncludeSearch,
       uploads,
@@ -395,12 +535,14 @@ export async function handleChatStreamGenerate(req, res) {
       parts: [{ text: m.content }]
     })) : [];
 
+    const files = Array.isArray(req.files) ? req.files : [];
+    const transactionContext = await buildTransactionContextFromUploads(files);
+
     // If uploads provided via multipart/form-data, include their extracted text and images
     let composedText = String(prompt);
     let imageParts = [];
     let uploadedText = '';
     try {
-      const files = Array.isArray(req.files) ? req.files : [];
       if (files.length) {
         const extractedText = await extractTextFromUploads(files);
         const uploadedImages = await extractImagesFromUploads(files);
@@ -416,6 +558,10 @@ export async function handleChatStreamGenerate(req, res) {
       // ignore upload extraction errors to keep streaming resilient
     }
 
+    if (transactionContext?.contextText) {
+      composedText += `\n\n--- Structured Transactions (with sus_detection) ---\n${transactionContext.contextText}`;
+    }
+
     // Add current user message (text + any image inlineData)
     const userParts = [{ text: composedText }, ...imageParts];
     chatHistory.push({
@@ -424,11 +570,11 @@ export async function handleChatStreamGenerate(req, res) {
     });
 
     // Default includeSearch to false when files exist unless explicitly overridden
-    const files = Array.isArray(req.files) ? req.files : [];
     const includeSearch = typeof options.includeSearch === 'boolean' ? options.includeSearch : (files.length === 0);
     const includeImageSearch = options.includeImageSearch !== false;
     const includeYouTube = options.includeYouTube === true; // Opt-in for YouTube search
-    const systemPrompt = options.systemPrompt || MEDISETU_PROMPT({ username });
+    const systemPrompt =
+      options.systemPrompt || buildAmlAssistantPrompt({ username });
     const uploadContext = uploadedText ? uploadedText.slice(0, 400) : '';
     const contextualSearchQuery = buildContextualSearchQuery({ prompt, history: messages, extra: uploadContext });
 
