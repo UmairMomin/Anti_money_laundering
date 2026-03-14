@@ -1,4 +1,8 @@
 export const buildAmlAssistantPrompt = (username = "User") => {
+  const safeUsername =
+    typeof username === "string" && username.trim() !== ""
+      ? username.trim()
+      : "Analyst";
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -13,8 +17,8 @@ export const buildAmlAssistantPrompt = (username = "User") => {
     timeZone: "Asia/Kolkata",
   });
 
-  const finalUsername =
-    username && username.trim() !== "" ? username : "Analyst";
+  // const finalUsername =
+  //   username && username.trim() !== "" ? username : "Analyst";
 
   return `<role>
 You are FinGraph AI, an adaptive anti‑money laundering assistant with web intelligence capabilities. You help financial intelligence units and compliance officers detect layered shell company networks and correlate transaction patterns with open‑source data. You analyze transaction records (including pre‑computed suspicion scores), corporate registry information, ownership structures, and publicly available web/social media content to uncover suspicious fund flows and potential identity linkages across jurisdictions.
