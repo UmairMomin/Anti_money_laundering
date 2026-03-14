@@ -27,7 +27,6 @@ import { FeedbackDialog } from "@/components/ui/feedback-dialog"
 import { toast } from "sonner"
 import { TTSButton } from "@/components/ui/tts-button"
 import Link from "next/link"
-import UnicornScene from "unicornstudio-react"
 
 function normalizeImageResults(raw) {
   if (!Array.isArray(raw)) return undefined
@@ -54,6 +53,142 @@ function applyMermaidReplacements(content, blocks) {
     }
     return acc
   }, content)
+}
+
+const HeroBackdropCanvas = () => {
+  const canvasRef = useRef(null)
+  const rafRef = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const primary = "0,232,122"
+    const danger = "239,68,68"
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    let w = 0
+    let h = 0
+
+    const resize = () => {
+      w = canvas.offsetWidth
+      h = canvas.offsetHeight
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    resize()
+    window.addEventListener("resize", resize)
+
+    const nodes = Array.from({ length: 22 }, (_, i) => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.22,
+      vy: (Math.random() - 0.5) * 0.22,
+      r: Math.random() * 2.2 + 1.4,
+      flagged: i < 3,
+      phase: Math.random() * Math.PI * 2,
+    }))
+
+    nodes[0] = { ...nodes[0], x: w * 0.48, y: h * 0.46, r: 5, flagged: true }
+    nodes[1] = { ...nodes[1], x: w * 0.42, y: h * 0.58, r: 4.2, flagged: true, vx: -0.1, vy: 0.06 }
+    nodes[2] = { ...nodes[2], x: w * 0.58, y: h * 0.58, r: 4.2, flagged: true, vx: 0.08, vy: -0.1 }
+
+    const loop = [nodes[0], nodes[1], nodes[2]]
+    const cpts = [
+      { t: 0, sp: 0.0042 },
+      { t: 0.33, sp: 0.0055 },
+      { t: 0.67, sp: 0.0036 },
+    ]
+    const lerp = (a, b, t) => a + (b - a) * t
+    const getCP = (t) => {
+      const s = Math.floor(t * 3) % 3
+      const st = (t * 3) % 1
+      const f = loop[s]
+      const to = loop[(s + 1) % 3]
+      return { x: lerp(f.x, to.x, st), y: lerp(f.y, to.y, st) }
+    }
+
+    let frame = 0
+    const draw = () => {
+      frame += 1
+      ctx.clearRect(0, 0, w, h)
+
+      nodes.forEach((n) => {
+        n.x += n.vx
+        n.y += n.vy
+        if (n.x < 18 || n.x > w - 18) n.vx *= -1
+        if (n.y < 18 || n.y > h - 18) n.vy *= -1
+      })
+
+      for (let i = 0; i < nodes.length; i += 1) {
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y)
+          if (d > 170) continue
+          const alpha = (1 - d / 170) * 0.1
+          const sus = nodes[i].flagged && nodes[j].flagged
+          ctx.beginPath()
+          ctx.moveTo(nodes[i].x, nodes[i].y)
+          ctx.lineTo(nodes[j].x, nodes[j].y)
+          ctx.setLineDash(sus ? [6, 4] : [])
+          ctx.strokeStyle = sus
+            ? `rgba(${danger},${alpha * 4})`
+            : `rgba(${primary},${alpha})`
+          ctx.lineWidth = sus ? 1.2 : 0.65
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
+      }
+
+      cpts.forEach((p) => {
+        p.t = (p.t + p.sp) % 1
+        const pt = getCP(p.t)
+        ctx.beginPath()
+        ctx.arc(pt.x, pt.y, 2.4, 0, 6.28)
+        ctx.fillStyle = `rgba(${danger},0.88)`
+        ctx.fill()
+      })
+
+      nodes.forEach((n) => {
+        const pulse = Math.sin(frame * 0.022 + n.phase)
+        if (n.flagged) {
+          ctx.beginPath()
+          ctx.arc(n.x, n.y, n.r + 8 + pulse * 4, 0, 6.28)
+          ctx.strokeStyle = `rgba(${danger},${0.08 + pulse * 0.03})`
+          ctx.lineWidth = 1
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.arc(n.x, n.y, n.r, 0, 6.28)
+          ctx.fillStyle = `rgba(${danger},0.18)`
+          ctx.fill()
+          ctx.strokeStyle = `rgba(${danger},0.7)`
+          ctx.lineWidth = 1.3
+          ctx.stroke()
+        } else {
+          ctx.beginPath()
+          ctx.arc(n.x, n.y, n.r, 0, 6.28)
+          ctx.fillStyle = `rgba(${primary},0.06)`
+          ctx.fill()
+          ctx.strokeStyle = `rgba(${primary},${0.16 + pulse * 0.05})`
+          ctx.lineWidth = 0.8
+          ctx.stroke()
+        }
+      })
+
+      rafRef.current = requestAnimationFrame(draw)
+    }
+
+    draw()
+
+    return () => {
+      window.removeEventListener("resize", resize)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="chat-bg-canvas" />
 }
 
 export default function ChatPage() {
@@ -460,12 +595,14 @@ export default function ChatPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
         .chat-root {
-          --accent: #34b27b;
-          --accent-glow: rgba(52, 178, 123, 0.35);
-          --accent-dim: rgba(52, 178, 123, 0.12);
+          --accent: #00e87a;
+          --accent-rgb: 0, 232, 122;
+          --danger-rgb: 239, 68, 68;
+          --accent-glow: rgba(var(--accent-rgb), 0.35);
+          --accent-dim: rgba(var(--accent-rgb), 0.12);
           --glass-bg: rgba(255, 255, 255, 0.06);
           --glass-border: rgba(255, 255, 255, 0.1);
           --glass-blur: blur(24px);
@@ -473,11 +610,63 @@ export default function ChatPage() {
           --panel-border: rgba(255,255,255,0.08);
           --text-primary: rgba(240, 235, 228, 0.95);
           --text-secondary: rgba(200, 190, 178, 0.6);
-          --font-display: 'Lora', serif;
+          --font-display: 'Playfair Display', Georgia, serif;
           --font-body: 'Plus Jakarta Sans', sans-serif;
+          --font-mono: 'IBM Plex Mono', monospace;
         }
 
         .chat-root * { font-family: var(--font-body); box-sizing: border-box; }
+
+        .chat-bg {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .chat-bg-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.2;
+          filter: saturate(0.9);
+        }
+        .chat-bg-canvas {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0.5;
+        }
+        .chat-bg-grid {
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(rgba(var(--accent-rgb),0.045) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(var(--accent-rgb),0.045) 1px, transparent 1px);
+          background-size: 90px 90px;
+          opacity: 0.35;
+        }
+        .chat-bg-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse 1200px 700px at 50% 35%, rgba(var(--accent-rgb),0.08) 0%, rgba(5,5,12,0.9) 65%);
+        }
+        .chat-bg-glow {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse 800px 500px at 50% 20%, rgba(var(--accent-rgb),0.1), transparent 70%);
+        }
+        .chat-bg-topfade,
+        .chat-bg-bottomfade {
+          position: absolute;
+          left: 0;
+          right: 0;
+          height: 110px;
+        }
+        .chat-bg-topfade { top: 0; background: linear-gradient(to bottom, rgba(5,5,10,0.95), transparent); }
+        .chat-bg-bottomfade { bottom: 0; background: linear-gradient(to top, rgba(5,5,10,0.95), transparent); }
 
         /* Scanline overlay */
         .chat-root::before {
@@ -511,7 +700,7 @@ export default function ChatPage() {
 
         .hud-header {
           background: rgba(8, 8, 14, 0.78);
-          border-bottom: 1px solid rgba(52, 178, 123, 0.18);
+          border-bottom: 1px solid rgba(var(--accent-rgb), 0.18);
           backdrop-filter: blur(32px) saturate(1.4);
           -webkit-backdrop-filter: blur(32px) saturate(1.4);
         }
@@ -531,6 +720,7 @@ export default function ChatPage() {
           gap: 0.4rem;
           height: 32px;
           padding: 0 14px;
+          font-family: var(--font-mono);
           font-size: 0.75rem;
           font-weight: 500;
           letter-spacing: 0.04em;
@@ -548,14 +738,14 @@ export default function ChatPage() {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(52,178,123,0.15), transparent);
+          background: linear-gradient(135deg, rgba(var(--accent-rgb),0.15), transparent);
           opacity: 0;
           transition: opacity 0.2s;
         }
         .hud-btn:hover {
           color: #c8f0e0;
-          border-color: rgba(52, 178, 123, 0.35);
-          box-shadow: 0 0 12px rgba(52, 178, 123, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+          border-color: rgba(var(--accent-rgb), 0.35);
+          box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
         }
         .hud-btn:hover::after { opacity: 1; }
 
@@ -566,6 +756,7 @@ export default function ChatPage() {
           gap: 10px;
           height: 36px;
           padding: 0 12px 0 6px;
+          font-family: var(--font-mono);
           font-size: 0.75rem;
           font-weight: 500;
           color: rgba(200, 190, 178, 0.7);
@@ -577,15 +768,15 @@ export default function ChatPage() {
         }
         .hud-profile-btn:hover {
           color: #c8f0e0;
-          border-color: rgba(52, 178, 123, 0.35);
-          box-shadow: 0 0 16px rgba(52, 178, 123, 0.2);
+          border-color: rgba(var(--accent-rgb), 0.35);
+          box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.2);
         }
 
         .hud-avatar {
           width: 26px;
           height: 26px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #34b27b, #1a5c3d);
+          background: linear-gradient(135deg, var(--accent), #1a5c3d);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -593,7 +784,7 @@ export default function ChatPage() {
           font-size: 0.7rem;
           font-weight: 700;
           color: white;
-          border: 1px solid rgba(52, 178, 123, 0.5);
+          border: 1px solid rgba(var(--accent-rgb), 0.5);
           flex-shrink: 0;
         }
 
@@ -604,10 +795,10 @@ export default function ChatPage() {
           top: calc(100% + 10px);
           min-width: 300px;
           background: rgba(10, 10, 18, 0.94);
-          border: 1px solid rgba(52, 178, 123, 0.2);
+          border: 1px solid rgba(var(--accent-rgb), 0.2);
           border-radius: 12px;
           padding: 12px;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 40px rgba(52,178,123,0.08);
+          box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 40px rgba(var(--accent-rgb),0.08);
           backdrop-filter: blur(32px);
           -webkit-backdrop-filter: blur(32px);
         }
@@ -636,7 +827,7 @@ export default function ChatPage() {
           text-align: left;
         }
         .hud-dropdown-item:hover {
-          background: rgba(52, 178, 123, 0.12);
+          background: rgba(var(--accent-rgb), 0.12);
           color: #c8f0e0;
         }
 
@@ -648,7 +839,7 @@ export default function ChatPage() {
           transition: background 0.15s;
         }
         .conv-item:hover { background: rgba(255,255,255,0.04); }
-        .conv-item.active { background: rgba(52, 178, 123, 0.1); }
+        .conv-item.active { background: rgba(var(--accent-rgb), 0.1); }
 
         .conv-btn {
           flex: 1;
@@ -700,16 +891,16 @@ export default function ChatPage() {
           transition: border-color 0.2s;
         }
         .search-input::placeholder { color: rgba(180,170,160,0.35); }
-        .search-input:focus { border-color: rgba(52,178,123,0.4); box-shadow: 0 0 0 3px rgba(52,178,123,0.08); }
+        .search-input:focus { border-color: rgba(var(--accent-rgb),0.4); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.08); }
 
         /* Welcome screen */
         .welcome-panel {
           background: rgba(10, 10, 18, 0.72);
-          border: 1px solid rgba(52, 178, 123, 0.15);
+          border: 1px solid rgba(var(--accent-rgb), 0.15);
           border-radius: 20px;
           backdrop-filter: blur(40px) saturate(1.3);
           -webkit-backdrop-filter: blur(40px) saturate(1.3);
-          box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 60px rgba(52,178,123,0.06) inset;
+          box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 60px rgba(var(--accent-rgb),0.06) inset;
           padding: 48px 40px 40px;
           text-align: center;
           position: relative;
@@ -723,7 +914,7 @@ export default function ChatPage() {
           transform: translateX(-50%);
           width: 300px;
           height: 300px;
-          background: radial-gradient(circle, rgba(52,178,123,0.12), transparent 70%);
+          background: radial-gradient(circle, rgba(var(--accent-rgb),0.12), transparent 70%);
           pointer-events: none;
         }
 
@@ -732,9 +923,10 @@ export default function ChatPage() {
           align-items: center;
           gap: 8px;
           padding: 5px 14px;
-          background: rgba(52,178,123,0.1);
-          border: 1px solid rgba(52,178,123,0.25);
+          background: rgba(var(--accent-rgb),0.1);
+          border: 1px solid rgba(var(--accent-rgb),0.25);
           border-radius: 20px;
+          font-family: var(--font-mono);
           font-size: 0.6rem;
           font-weight: 600;
           letter-spacing: 0.2em;
@@ -752,7 +944,7 @@ export default function ChatPage() {
           color: var(--text-primary);
         }
         .welcome-greeting .name-highlight {
-          background: linear-gradient(135deg, #a8e8d0, #34b27b, #1a5c3d);
+          background: linear-gradient(135deg, #a8e8d0, var(--accent), #1a5c3d);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -781,28 +973,29 @@ export default function ChatPage() {
           background: rgba(255,255,255,0.04);
           border: 1px solid rgba(255,255,255,0.07);
           border-radius: 20px;
+          font-family: var(--font-mono);
           font-size: 0.72rem;
           color: rgba(200,190,178,0.55);
           transition: all 0.2s;
         }
         .welcome-pill:hover {
-          border-color: rgba(52,178,123,0.3);
+          border-color: rgba(var(--accent-rgb),0.3);
           color: rgba(200,230,215,0.9);
-          background: rgba(52,178,123,0.07);
+          background: rgba(var(--accent-rgb),0.07);
         }
         .welcome-pill-dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #34b27b;
-          box-shadow: 0 0 6px rgba(52,178,123,0.6);
+          background: var(--accent);
+          box-shadow: 0 0 6px rgba(var(--accent-rgb),0.6);
           flex-shrink: 0;
         }
 
         /* Messages panel */
         .messages-panel {
           background: rgba(8, 8, 16, 0.68);
-          border: 1px solid rgba(52,178,123,0.12);
+          border: 1px solid rgba(var(--accent-rgb),0.12);
           border-radius: 16px;
           padding: 24px;
           backdrop-filter: blur(32px);
@@ -814,7 +1007,7 @@ export default function ChatPage() {
         /* Footer input area */
         .hud-footer {
           background: rgba(8, 8, 14, 0.85);
-          border-top: 1px solid rgba(52,178,123,0.15);
+          border-top: 1px solid rgba(var(--accent-rgb),0.15);
           backdrop-filter: blur(32px) saturate(1.4);
           -webkit-backdrop-filter: blur(32px) saturate(1.4);
         }
@@ -824,13 +1017,13 @@ export default function ChatPage() {
           inset-x-0;
           top: -1px;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(52,178,123,0.4), transparent);
+          background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.4), transparent);
         }
 
         /* Mobile menu */
         .mobile-menu-panel {
           background: rgba(8, 8, 16, 0.95);
-          border: 1px solid rgba(52,178,123,0.2);
+          border: 1px solid rgba(var(--accent-rgb),0.2);
           border-radius: 16px;
           backdrop-filter: blur(40px);
           -webkit-backdrop-filter: blur(40px);
@@ -840,11 +1033,11 @@ export default function ChatPage() {
         /* Scrollbar */
         .hud-scroll::-webkit-scrollbar { width: 4px; }
         .hud-scroll::-webkit-scrollbar-track { background: transparent; }
-        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(52,178,123,0.25); border-radius: 2px; }
-        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(52,178,123,0.4); }
+        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),0.25); border-radius: 2px; }
+        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(var(--accent-rgb),0.4); }
 
         /* Pulse dot */
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(52,178,123,0.8); } 50% { opacity: 0.4; box-shadow: 0 0 2px rgba(52,178,123,0.2); } }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(var(--accent-rgb),0.8); } 50% { opacity: 0.4; box-shadow: 0 0 2px rgba(var(--accent-rgb),0.2); } }
         .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
 
         /* Spin animation */
@@ -854,7 +1047,7 @@ export default function ChatPage() {
         /* Horizontal divider line */
         .hud-divider {
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(52,178,123,0.25), transparent);
+          background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.25), transparent);
           margin: 10px 0;
         }
       `}</style>
@@ -863,24 +1056,23 @@ export default function ChatPage() {
         className="chat-root relative flex flex-col overflow-hidden"
         style={{ minHeight: viewportHeight, color: "var(--text-primary)" }}
       >
-        {/* ── Unicorn Studio background ── */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-0"
-          style={{ zIndex: 0, height: viewportHeight }}
-        >
-          <div className="absolute inset-0" style={{ opacity: 0.6 }}>
-            <UnicornScene
-              projectId="MdKKEse3xqRLzs9KY2Yg"
-              sdkUrl="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.3/dist/unicornStudio.umd.js"
-              width="100%"
-              height="100%"
-            />
-          </div>
-          {/* Dark vignette overlay */}
-          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(5,5,10,0.55) 0%, rgba(5,5,10,0.88) 80%)" }} />
-          {/* Subtle grid */}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(rgba(52,178,123,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(52,178,123,0.04) 1px, transparent 1px)", backgroundSize: "80px 80px", opacity: 0.4 }} />
+        {/* ── Hero-style background ── */}
+        <div aria-hidden="true" className="chat-bg" style={{ height: viewportHeight }}>
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="chat-bg-video"
+          >
+            <source src="/bg-video-graphP.webm" type="video/webm" />
+          </video>
+          <HeroBackdropCanvas />
+          <div className="chat-bg-glow" />
+          <div className="chat-bg-grid" />
+          <div className="chat-bg-vignette" />
+          <div className="chat-bg-topfade" />
+          <div className="chat-bg-bottomfade" />
         </div>
 
         {/* ── Header ── */}
@@ -893,8 +1085,8 @@ export default function ChatPage() {
 
             {/* Left: back + logo */}
             <div className="flex items-center gap-3">
-              <Image src="/logo14.png" alt="RegIntel logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(52,178,123,0.3)" }} />
-              <span className="hud-logo-text">AML Shield <span style={{ color: "#34b27b" }}></span></span>
+              <Image src="/logo14.png" alt="RegIntel logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)" }} />
+              <span className="hud-logo-text">AML Shield <span style={{ color: "var(--accent)" }}></span></span>
             </div>
 
             {/* Desktop center actions */}
@@ -965,7 +1157,7 @@ export default function ChatPage() {
                                   <button className="conv-btn" onClick={() => handleConversationSelect(conv.id)} type="button">
                                     <div className="conv-title">{conv.title || `Chat ${conv.id.slice(0, 6)}`}</div>
                                     {ts && <div className="conv-date">{ts}</div>}
-                                    {loadingConversationId === conv.id && <div style={{ fontSize: "0.65rem", color: "#34b27b", marginTop: 2 }}>Loading…</div>}
+                                    {loadingConversationId === conv.id && <div style={{ fontSize: "0.65rem", color: "var(--accent)", marginTop: 2 }}>Loading…</div>}
                                   </button>
                                   <button className="conv-delete" onClick={(e) => handleDeleteConversation(conv.id, e)} title="Delete" type="button">
                                     <Trash2 style={{ width: 13, height: 13 }} />
@@ -999,7 +1191,7 @@ export default function ChatPage() {
                   onClick={() => { setIsHistoryOpen(false); setIsProfileOpen((v) => !v) }}
                 >
                   {userAvatar
-                    ? <img src={userAvatar} alt={displayName} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(52,178,123,0.4)" }} referrerPolicy="no-referrer" />
+                    ? <img src={userAvatar} alt={displayName} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(var(--accent-rgb),0.4)" }} referrerPolicy="no-referrer" />
                     : <div className="hud-avatar">{userInitial}</div>
                   }
                   <span style={{ fontSize: "0.75rem", fontWeight: 500 }}>Profile</span>
@@ -1012,7 +1204,7 @@ export default function ChatPage() {
                     <div className="corner-bracket bl" /><div className="corner-bracket br" />
                     <div className="hud-dropdown-header" style={{ display: "flex", gap: 12, alignItems: "center" }}>
                       {userAvatar
-                        ? <img src={userAvatar} alt={displayName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(52,178,123,0.4)", flexShrink: 0 }} referrerPolicy="no-referrer" />
+                        ? <img src={userAvatar} alt={displayName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(var(--accent-rgb),0.4)", flexShrink: 0 }} referrerPolicy="no-referrer" />
                         : <div className="hud-avatar" style={{ width: 44, height: 44, fontSize: "1rem" }}>{userInitial}</div>
                       }
                       <div style={{ minWidth: 0 }}>
@@ -1062,12 +1254,12 @@ export default function ChatPage() {
                       <div style={{ position: "absolute", top: "50%", left: "50%", width: "28rem", height: "28rem", pointerEvents: "none", zIndex: 0 }}
                         className="spin-slow"
                       >
-                        <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "conic-gradient(from 0deg, rgba(52,178,123,0.15), transparent, rgba(52,178,123,0.1), transparent)", filter: "blur(20px)", opacity: 0.4 }} />
+                        <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "conic-gradient(from 0deg, rgba(var(--accent-rgb),0.15), transparent, rgba(var(--accent-rgb),0.1), transparent)", filter: "blur(20px)", opacity: 0.4 }} />
                       </div>
 
                       <div style={{ position: "relative", zIndex: 1 }}>
                         <div className="welcome-badge">
-                          <span className="pulse-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#34b27b" }} />
+                          <span className="pulse-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--accent)" }} />
                           Neural console online
                         </div>
 
@@ -1144,11 +1336,11 @@ export default function ChatPage() {
           style={{ zIndex: 30 }}
         >
           {/* Top glow line */}
-          <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg, transparent, rgba(52,178,123,0.45), transparent)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.45), transparent)", pointerEvents: "none" }} />
 
           <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6" style={{ position: "relative" }}>
             {/* Ambient glow behind input */}
-            <div style={{ position: "absolute", insetX: "10%", top: 0, height: 60, background: "radial-gradient(ellipse at 50% 0%, rgba(52,178,123,0.18), transparent 70%)", pointerEvents: "none", filter: "blur(12px)" }} />
+            <div style={{ position: "absolute", insetX: "10%", top: 0, height: 60, background: "radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb),0.18), transparent 70%)", pointerEvents: "none", filter: "blur(12px)" }} />
             <ChatForm isPending={isGenerating} handleSubmit={handleSubmit}>
               {({ files, setFiles }) => (
                 <div style={{ position: "relative" }}>
@@ -1193,3 +1385,4 @@ export default function ChatPage() {
     </>
   )
 }
+
