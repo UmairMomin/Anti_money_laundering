@@ -1128,7 +1128,7 @@ export default function ChatPage() {
 
             {/* Left: back + logo */}
             <div className="flex items-center gap-3">
-              <Image src="/logo14.png" alt="RegIntel logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)" }} />
+              <Image src="/main-logo.png" alt="AML Shield logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)" }} />
               <span className="hud-logo-text">AML Shield <span style={{ color: "var(--accent)" }}></span></span>
             </div>
 
@@ -1428,4 +1428,3 @@ export default function ChatPage() {
     </>
   )
 }
-
