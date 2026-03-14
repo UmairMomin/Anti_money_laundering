@@ -22,6 +22,7 @@ import {
 import { FilePreview } from "@/components/ui/file-preview"
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer"
 import { ExcalidrawViewer } from "@/components/ui/excalidraw-viewer"
+import { MlPayloadGraphViewer } from "@/components/ui/ml-payload-graph-viewer"
 
 
 
@@ -213,6 +214,10 @@ export interface Message {
     }
     files: Record<string, any>
   }> | null
+  /** ML schema payload (P1–P6) from parallel ml-generate; rendered as nodes/edges graph */
+  mlPayload?: Record<string, unknown> | null
+  mlPattern?: string | null
+  mlSampleId?: string | null
 }
 
 export interface ImageResult {
@@ -248,6 +253,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   codeSnippets,
   executionOutputs,
   excalidrawData,
+  mlPayload,
+  mlPattern,
+  mlSampleId,
 }) => {
   const files = useMemo(() => {
     return experimental_attachments?.map((attachment) => {
@@ -805,6 +813,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <ExcalidrawViewer key={index} data={diagram} />
             ))}
           </div>
+        )}
+        {mlPayload && typeof mlPayload === "object" && Object.keys(mlPayload).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mt-4"
+          >
+            <p className="text-xs font-medium text-muted-foreground mb-2">ML schema graph</p>
+            <MlPayloadGraphViewer
+              payload={mlPayload}
+              pattern={mlPattern ?? undefined}
+              sampleId={mlSampleId ?? undefined}
+              height={320}
+              className="w-full"
+            />
+          </motion.div>
         )}
         {resolvedChartUrls.length > 0 && (
           <>

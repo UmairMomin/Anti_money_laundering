@@ -206,6 +206,7 @@ export default function ChatPage() {
   const headerRef = useRef(null)
   const footerRef = useRef(null)
   const abortControllerRef = useRef(null)
+  const assistantMessageIdRef = useRef(null)
   const [conversations, setConversations] = useState([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [loadingConversationId, setLoadingConversationId] = useState(null)
@@ -395,6 +396,15 @@ export default function ChatPage() {
       const conversationId = currentConversationId
       abortControllerRef.current = new AbortController()
 
+      const promptText = typeof userContent === "string" ? userContent.trim() : ""
+      const mlPromise = promptText
+        ? fetch("/api/public/chat/ml-generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify({ prompt: promptText }),
+          }).catch((err) => { console.warn("ML generate parallel call failed:", err); return null })
+        : null
+
       let response
       if (attachments && attachments.length > 0) {
         const formData = new FormData()
@@ -415,11 +425,23 @@ export default function ChatPage() {
         })
       }
 
+      if (mlPromise) {
+        mlPromise.then(async (mlRes) => {
+          if (!mlRes?.ok) return
+          try {
+            const data = await mlRes.json()
+            const mid = assistantMessageIdRef.current
+            if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: data.payload, mlPattern: data.pattern, mlSampleId: data.sample_id } : msg))
+          } catch (_) {}
+        }).catch(() => {})
+      }
+
       if (!response.ok) throw new Error((await response.text()) || "Failed to get response from the API")
 
       setAssistantStatuses((prev) => ({ ...prev, searching: "complete", responding: "active" }))
 
       const assistantMessageId = crypto.randomUUID()
+      assistantMessageIdRef.current = assistantMessageId
       setMessages((prev) => [...prev, {
         id: assistantMessageId, role: "assistant", content: "", createdAt: new Date(),
         sources: [], chartUrl: null, chartUrls: [], images: [], promptTitle: userContent, isComplete: false,

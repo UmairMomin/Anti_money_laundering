@@ -16,6 +16,7 @@ import YouTubeMCP from "../helpers/youtubeSearch.js";
 import env from "../config/env.js";
 import { processMermaidBlocks } from "../helpers/mermaid.js";
 import { runFeatherlessChat } from "../helpers/featherless.js";
+import { generateMlSchema } from "../helpers/mlSchemaGenerator.js";
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 const FEATHERLESS_MODEL = env.FEATHERLESS_MODEL || "Qwen/Qwen2.5-32B-Instruct";
@@ -1241,5 +1242,32 @@ export async function deleteConversation(req, res) {
   } catch (error) {
     console.error("Error in deleteConversation:", error);
     res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Generate ML-ready JSON (P1–P6 format) from user prompt via Groq.
+ * POST body: { prompt: string, pattern?: string } (pattern optional: "P1".."P6" or alias like "Round Trip", "Hawala")
+ * Response: { payload, pattern, sample_id } for use by the ML model.
+ */
+export async function handleMlGenerate(req, res) {
+  try {
+    const { prompt, pattern } = req.body || {};
+    const trimmedPrompt = typeof prompt === "string" ? prompt.trim() : "";
+    if (!trimmedPrompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    const result = await generateMlSchema(trimmedPrompt, { pattern: pattern || undefined });
+    return res.json({
+      payload: result.payload,
+      pattern: result.pattern,
+      sample_id: result.sample_id,
+    });
+  } catch (error) {
+    console.error("Error in handleMlGenerate:", error);
+    res.status(500).json({
+      error: error.message || "ML schema generation failed",
+    });
   }
 }
