@@ -249,7 +249,7 @@ export function MessageInput({
             onPaste={onPaste}
             onKeyDown={onKeyDown}
             className={cn(
-              "z-10 w-full grow resize-none rounded-xl border border-input bg-background p-3 pr-24 text-sm ring-offset-background transition-[border] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+              "z-10 w-full grow resize-none rounded-xl border border-input bg-card p-3 pr-24 text-sm ring-offset-background transition-[border] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
               showFileList && "pb-16",
               className
             )}
@@ -448,7 +448,7 @@ function FileUploadOverlay({ isDragging }: FileUploadOverlayProps) {
     <AnimatePresence>
       {isDragging && (
         <motion.div
-          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center space-x-2 rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground"
+          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center space-x-2 rounded-xl border border-dashed border-border bg-card/80 text-sm text-muted-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -488,7 +488,7 @@ function showFileUploadDialog() {
 function TranscribingOverlay() {
   return (
     <motion.div
-      className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm"
+      className="flex h-full w-full flex-col items-center justify-center rounded-xl bg-card/80 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -535,7 +535,7 @@ function RecordingPrompt({ isVisible, onStopRecording }: RecordingPromptProps) {
             },
           }}
           exit={{ top: 0, filter: "blur(5px)" }}
-          className="absolute left-1/2 flex -translate-x-1/2 cursor-pointer overflow-hidden whitespace-nowrap rounded-full border bg-background py-1 text-center text-sm text-muted-foreground"
+          className="absolute left-1/2 flex -translate-x-1/2 cursor-pointer overflow-hidden whitespace-nowrap rounded-full border bg-card py-1 text-center text-sm text-muted-foreground"
           onClick={onStopRecording}
         >
           <span className="mx-2.5 flex items-center">

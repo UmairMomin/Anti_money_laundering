@@ -29,8 +29,8 @@ const silkscreen = Silkscreen({
 });
 
 export const metadata: Metadata = {
-  title: "RegIntel",
-  description: "Regulatory intelligence workspace",
+  title: "AML Shield",
+  description: "AML Shield is a regulatory intelligence workspace",
   icons: {
     icon: "/logo14.png",
     shortcut: "/logo14.png",
