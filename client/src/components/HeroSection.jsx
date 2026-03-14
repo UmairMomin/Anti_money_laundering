@@ -127,7 +127,7 @@ const NetworkOrb = () => {
     const drawSphere = () => {
       const r = R();
       if (!r) return;
-      // Increased line width and opacity for thicker/darker grid
+      // Thicker and darker grid lines
       ctx.lineWidth = 0.8;
       const drawPath = (fn) => {
         ctx.beginPath();
@@ -138,9 +138,11 @@ const NetworkOrb = () => {
           const { sx, sy } = prj(t.x, t.y, t.z);
           i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
         }
-        ctx.strokeStyle = "rgba(0,232,122,0.2)"; // darker (higher alpha)
+        ctx.strokeStyle = "rgba(0,232,122,0.2)"; // darker
         ctx.stroke();
       };
+
+      // Latitude lines (parallels) – already full circles
       for (let lat = -60; lat <= 60; lat += 20) {
         const y0 = r * Math.sin((lat * Math.PI) / 180);
         const lr = Math.sqrt(Math.max(0, r * r - y0 * y0));
@@ -150,10 +152,12 @@ const NetworkOrb = () => {
           z: lr * Math.sin(t * 6.28),
         }));
       }
-      for (let lon = 0; lon < 180; lon += 20) {
+
+      // Longitude lines (meridians) – now full 360°
+      for (let lon = 0; lon < 360; lon += 20) {
         const a0 = (lon * Math.PI) / 180;
         drawPath((t) => {
-          const phi = t * Math.PI - Math.PI / 2;
+          const phi = t * Math.PI - Math.PI / 2; // from -90° to +90°
           return {
             x: r * Math.cos(phi) * Math.cos(a0),
             y: r * Math.sin(phi),
@@ -695,16 +699,6 @@ const HeroSection = () => {
         <div className="hero-grid">
           {/* LEFT: text */}
           <div className="hero-text" style={{ textAlign: "center" }}>
-            {/* <div style={{ ...stagger(0), display:"inline-flex", alignItems:"center", gap:8,
-              padding:"5px 14px", borderRadius:5, marginBottom:26,
-              border:"1px solid rgba(var(--destructive-rgb),.28)",
-              background:"rgba(var(--destructive-rgb),.07)" }}>
-              <span style={{ width:5,height:5,borderRadius:"50%",background:"var(--destructive)",display:"block",animation:"hero-blink 1.2s ease infinite" }}/>
-              <span style={{ fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,letterSpacing:".14em",color:"var(--destructive)" }}>
-                ⚠ 3 SUSPICIOUS NETWORKS DETECTED · LIVE
-              </span>
-            </div> */}
-
             <h1
               style={{
                 ...stagger(1),
@@ -849,8 +843,7 @@ const HeroSection = () => {
                 height: 500,
                 borderRadius: 16,
                 overflow: "hidden",
-                // border: "1px solid rgba(var(--primary-rgb),.12)",
-                background: "transparent", // removed dark background to match main section
+                background: "transparent",
               }}
             >
               {/* corner SVG brackets */}
@@ -880,59 +873,6 @@ const HeroSection = () => {
                   />
                 </svg>
               ))}
-
-              {/* top strip */}
-              {/* <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 38,
-                  zIndex: 3,
-                  pointerEvents: "none",
-                  background:
-                    "linear-gradient(to bottom,rgba(0,0,0,.38),transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0 34px",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: "var(--primary)",
-                      display: "block",
-                      animation: "hero-blink 1.8s ease infinite",
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: "'IBM Plex Mono',monospace",
-                      fontSize: 8,
-                      color: "rgba(0,232,122,.52)",
-                      letterSpacing: ".1em",
-                    }}
-                  >
-                    AML · NETWORK ANALYSIS
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontFamily: "'IBM Plex Mono',monospace",
-                    fontSize: 8,
-                    color: "rgba(239,68,68,.58)",
-                    letterSpacing: ".08em",
-                    fontWeight: 600,
-                  }}
-                >
-                  3 FLAGS ACTIVE
-                </span>
-              </div> */}
 
               <NetworkOrb />
 
