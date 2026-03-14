@@ -27,6 +27,7 @@ import { FeedbackDialog } from "@/components/ui/feedback-dialog"
 import { toast } from "sonner"
 import { TTSButton } from "@/components/ui/tts-button"
 import Link from "next/link"
+import { useAuth } from "@/contexts/auth-context"
 
 function normalizeImageResults(raw) {
   if (!Array.isArray(raw)) return undefined
@@ -192,9 +193,7 @@ const HeroBackdropCanvas = () => {
 }
 
 export default function ChatPage() {
-  const user = null
-  const token = null
-  const logout = () => {}
+  const { user, token, logout } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -1225,47 +1224,54 @@ export default function ChatPage() {
               </button>
             </div>
 
-            {/* Desktop right: profile */}
+            {/* Desktop right: profile / auth */}
             <div className="hidden md:flex items-center gap-2">
-              <div className="profile-dropdown" style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  className="hud-profile-btn"
-                  onClick={() => { setIsHistoryOpen(false); setIsProfileOpen((v) => !v) }}
-                >
-                  {userAvatar
-                    ? <img src={userAvatar} alt={displayName} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(var(--accent-rgb),0.4)" }} referrerPolicy="no-referrer" />
-                    : <div className="hud-avatar">{userInitial}</div>
-                  }
-                  <span style={{ fontSize: "0.75rem", fontWeight: 500 }}>Profile</span>
-                  <ChevronDown style={{ width: 13, height: 13, transition: "transform 0.3s", transform: isProfileOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
-                </button>
+              {user ? (
+                <div className="profile-dropdown" style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    className="hud-profile-btn"
+                    onClick={() => { setIsHistoryOpen(false); setIsProfileOpen((v) => !v) }}
+                  >
+                    {userAvatar
+                      ? <img src={userAvatar} alt={displayName} style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(var(--accent-rgb),0.4)" }} referrerPolicy="no-referrer" />
+                      : <div className="hud-avatar">{userInitial}</div>
+                    }
+                    <span style={{ fontSize: "0.75rem", fontWeight: 500 }}>{displayName}</span>
+                    <ChevronDown style={{ width: 13, height: 13, transition: "transform 0.3s", transform: isProfileOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+                  </button>
 
-                {isProfileOpen && (
-                  <div className="hud-dropdown" style={{ right: 0, width: 240 }}>
-                    <div className="corner-bracket tl" /><div className="corner-bracket tr" />
-                    <div className="corner-bracket bl" /><div className="corner-bracket br" />
-                    <div className="hud-dropdown-header" style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      {userAvatar
-                        ? <img src={userAvatar} alt={displayName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(var(--accent-rgb),0.4)", flexShrink: 0 }} referrerPolicy="no-referrer" />
-                        : <div className="hud-avatar" style={{ width: 44, height: 44, fontSize: "1rem" }}>{userInitial}</div>
-                      }
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
-                        {displayEmail && <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayEmail}</div>}
+                  {isProfileOpen && (
+                    <div className="hud-dropdown" style={{ right: 0, width: 240 }}>
+                      <div className="corner-bracket tl" /><div className="corner-bracket tr" />
+                      <div className="corner-bracket bl" /><div className="corner-bracket br" />
+                      <div className="hud-dropdown-header" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                        {userAvatar
+                          ? <img src={userAvatar} alt={displayName} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(var(--accent-rgb),0.4)", flexShrink: 0 }} referrerPolicy="no-referrer" />
+                          : <div className="hud-avatar" style={{ width: 44, height: 44, fontSize: "1rem" }}>{userInitial}</div>
+                        }
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
+                          {displayEmail && <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayEmail}</div>}
+                        </div>
+                      </div>
+                      <div className="hud-divider" />
+                      <button type="button" className="hud-dropdown-item" onClick={() => { setIsProfileOpen(false); logout() }}>
+                        <LogOut style={{ width: 13, height: 13 }} /> Logout
+                      </button>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px" }}>
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Theme</span>
+                        <ThemeToggle />
                       </div>
                     </div>
-                    <div className="hud-divider" />
-                    <button type="button" className="hud-dropdown-item" onClick={() => { setIsProfileOpen(false); logout() }}>
-                      <LogOut style={{ width: 13, height: 13 }} /> Logout
-                    </button>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px" }}>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Theme</span>
-                      <ThemeToggle />
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/login" className="hud-btn">Log in</Link>
+                  <Link href="/signup" className="hud-btn">Sign up</Link>
+                </>
+              )}
             </div>
           </div>
         </header>
