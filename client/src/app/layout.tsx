@@ -32,9 +32,9 @@ export const metadata: Metadata = {
   title: "AML Shield",
   description: "AML Shield is a regulatory intelligence workspace",
   icons: {
-    icon: "/logo14.png",
-    shortcut: "/logo14.png",
-    apple: "/logo14.png",
+    icon: "/main-logo.png",
+    shortcut: "/main-logo.png",
+    apple: "/main-logo.png",
   },
 };
 

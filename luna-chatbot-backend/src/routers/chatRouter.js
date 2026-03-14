@@ -1,7 +1,7 @@
 import express from 'express';
 import { uploadArray } from "../middleware/upload.js";
 import { authenticate, requireAuth } from "../middleware/auth.js";
-import { handleChatGenerate, handleChatStreamGenerate, getConversations, getConversationHistory, deleteConversation } from "../controllers/chatController.js";
+import { handleChatGenerate, handleChatStreamGenerate, getConversations, getConversationHistory, deleteConversation, handleMlGenerate } from "../controllers/chatController.js";
 
 const router = express.Router();
 
@@ -10,6 +10,9 @@ router.post('/', authenticate, requireAuth, uploadArray, handleChatGenerate);
 
 // Stream chat responses
 router.post('/stream', authenticate, requireAuth, uploadArray, handleChatStreamGenerate);
+
+// Generate ML-ready JSON (P1–P6 format) from user prompt via Groq for the ML model
+router.post('/ml-generate', authenticate, requireAuth, handleMlGenerate);
 
 // Get all conversations for the authenticated user
 router.get('/conversations', authenticate, requireAuth, getConversations);

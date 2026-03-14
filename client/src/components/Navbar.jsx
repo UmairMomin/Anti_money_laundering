@@ -16,7 +16,11 @@ const Navbar = () => {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <span className="inline-block h-3 w-3 rounded-full bg-primary" />
+          <img
+            src="/main-logo.png"
+            alt="AML Shield logo"
+            className="h-8 w-8 rounded-md"
+          />
           <span className="font-serif text-lg text-foreground font-semibold tracking-tight">
             AML Shield
           </span>
@@ -61,7 +65,7 @@ const Navbar = () => {
           </svg>
         </button>
       </div>
-w
+
       {/* Mobile menu */}
       {mobileOpen && (
         <div
