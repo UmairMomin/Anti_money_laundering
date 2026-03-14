@@ -286,8 +286,24 @@ export default function ChatPage() {
 
   const loadConversations = useCallback(async () => {
     setIsHistoryLoading(true)
-    setConversations([])
-    setIsHistoryLoading(false)
+    try {
+      const response = await fetch("/api/public/chat/conversations")
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || "Failed to load conversations")
+      }
+      const data = await response.json()
+      const normalized = Array.isArray(data)
+        ? data.map(normalizeConversationSummary).filter(Boolean)
+        : []
+      setConversations(normalized)
+    } catch (error) {
+      console.error("Failed to load conversations:", error)
+      toast("Failed to load chat history")
+      setConversations([])
+    } finally {
+      setIsHistoryLoading(false)
+    }
   }, [normalizeConversationSummary, token])
 
   useEffect(() => { loadConversations() }, [loadConversations])
@@ -356,14 +372,41 @@ export default function ChatPage() {
     setLoadingConversationId(conversationId)
     setIsHistoryOpen(false)
     setIsProfileOpen(false)
-    toast("History is disabled for guest mode")
-    setLoadingConversationId(null)
+    try {
+      const response = await fetch(`/api/public/chat/conversations/${conversationId}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || "Failed to load conversation")
+      }
+      const data = await response.json()
+      const historyMessages = Array.isArray(data?.messages) ? data.messages : []
+      const normalizedMessages = historyMessages.map(normalizeMessageFromHistory)
+      const withTitles = attachPromptTitlesToHistory(normalizedMessages)
+      setMessages(withTitles)
+      setCurrentConversationId(conversationId)
+    } catch (error) {
+      console.error("Failed to load conversation:", error)
+      toast("Failed to load that conversation")
+    } finally {
+      setLoadingConversationId(null)
+    }
   }, [attachPromptTitlesToHistory, normalizeMessageFromHistory, stop, token])
 
   const handleDeleteConversation = useCallback(async (conversationId, event) => {
     event?.preventDefault()
     event?.stopPropagation()
-    toast("History is disabled for guest mode")
+    try {
+      const response = await fetch(`/api/public/chat/conversations/${conversationId}`, { method: "DELETE" })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || "Failed to delete conversation")
+      }
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId))
+      if (currentConversationId === conversationId) startNewChat()
+    } catch (error) {
+      console.error("Failed to delete conversation:", error)
+      toast("Failed to delete conversation")
+    }
   }, [currentConversationId, startNewChat, token])
 
   const filteredSuggestions = useMemo(() => {
@@ -1107,7 +1150,7 @@ export default function ChatPage() {
 
             {/* Left: back + logo */}
             <div className="flex items-center gap-3">
-              <Image src="/logo14.png" alt="RegIntel logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)" }} />
+              <Image src="/main-logo.png" alt="AML Shield logo" width={32} height={32} style={{ borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)" }} />
               <span className="hud-logo-text">AML Shield <span style={{ color: "var(--accent)" }}></span></span>
             </div>
 
@@ -1407,4 +1450,3 @@ export default function ChatPage() {
     </>
   )
 }
-
