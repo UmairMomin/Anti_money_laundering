@@ -10,7 +10,7 @@ const Navbar = () => {
       className="fixed top-0 left-0 right-0 z-50 border-b border-border"
       style={{
         backdropFilter: "blur(12px)",
-        background: "rgba(15, 23, 42, 0.8)",
+        background: "color-mix(in srgb, var(--background) 82%, transparent)",
       }}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
@@ -61,7 +61,10 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border px-6 py-4 flex flex-col gap-4" style={{ background: "rgba(15, 23, 42, 0.95)" }}>
+        <div
+          className="md:hidden border-t border-border px-6 py-4 flex flex-col gap-4"
+          style={{ background: "color-mix(in srgb, var(--background) 94%, transparent)" }}
+        >
           {navLinks.map((link) => (
             <a
               key={link}

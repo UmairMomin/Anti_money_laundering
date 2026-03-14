@@ -40,8 +40,7 @@ const HowItWorksSection = () => {
   return (
     <section
       id="how-it-works"
-      className="py-24 md:py-32"
-      style={{ background: "#111c2e" }}
+      className="py-24 md:py-32 bg-secondary"
     >
       <div
         ref={ref}
@@ -55,7 +54,7 @@ const HowItWorksSection = () => {
         {/* Header row: text left, diagram right */}
         <div className="grid md:grid-cols-2 gap-12 items-center mb-14">
           <div>
-            <span className="pill-badge">HOW IT WORKS</span>
+            <span className="text-8xl font-mono text-primary text-bold mb-2">HOW IT WORKS</span>
             <h2 className="mt-6 text-3xl md:text-[42px] leading-[1.15] font-serif text-foreground">
               From raw data to
               <br />

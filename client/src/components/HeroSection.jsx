@@ -16,7 +16,7 @@ const HeroSection = () => {
   });
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section className="relative flex min-h-screen items-center justify-center overflow-x-hidden">
       {/* Video background */}
       <video
         autoPlay
@@ -34,7 +34,7 @@ const HeroSection = () => {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 800px 500px at 50% 40%, rgba(34,197,94,0.08) 0%, transparent 70%)",
+            "radial-gradient(ellipse 800px 500px at 50% 40%, rgba(var(--primary-rgb),0.12) 0%, transparent 70%)",
           zIndex: 1,
         }}
       />
@@ -44,14 +44,15 @@ const HeroSection = () => {
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-[640px] px-6 text-center pt-24">
-        <div style={stagger(0)}>
+        {/* <div style={stagger(0)}>
           <span className="pill-badge">FINTECH · ANTI-MONEY LAUNDERING · FT2</span>
-        </div>
+        </div> */}
 
         <h1 className="mt-8 text-5xl md:text-[64px] leading-[1.1] text-foreground" style={stagger(1)}>
           Follow the money.
           <br />
-          <span className="font-bold">Unmask the network.</span>
+          <span className="font-bold text-primary">Unmask</span>
+          <span className="font-bold"> the network.</span>
         </h1>
 
         <p
@@ -62,8 +63,11 @@ const HeroSection = () => {
           laundering patterns that single-transaction systems can't see.
         </p>
 
-        <div style={stagger(3)} className="mt-8">
-          <a href="#demo" className="btn-primary animate-glow-pulse">
+        <div style={stagger(3)} className="mt-8 overflow-visible">
+          <a
+            href="#demo"
+            className="btn-primary btn-glow animate-glow-pulse ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-[0_0_30px_rgba(var(--primary-rgb),0.6)]"
+          >
             Get Started Today
           </a>
         </div>
@@ -77,7 +81,7 @@ const HeroSection = () => {
         </p>
 
         {/* Dataset logos */}
-        <div className="mt-10" style={stagger(5)}>
+        {/* <div className="mt-10" style={stagger(5)}>
           <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">
             Used Datasets
           </p>
@@ -92,7 +96,7 @@ const HeroSection = () => {
               </span>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

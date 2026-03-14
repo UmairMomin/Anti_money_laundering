@@ -52,15 +52,16 @@ const CircularFlowDiagram = () => {
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke={isRed ? "#ef4444" : "rgba(148,163,184,0.3)"}
+                stroke={isRed ? "var(--destructive)" : "var(--muted-foreground)"}
                 strokeWidth={isActive ? 2 : 1}
                 strokeDasharray={isRed ? "6 3" : undefined}
+                strokeOpacity={isRed ? 1 : 0.35}
               />
               {/* Edge label */}
               <text
                 x={(from.x + to.x) / 2}
                 y={(from.y + to.y) / 2 - 6}
-                fill="#94a3b8"
+                fill="var(--muted-foreground)"
                 fontSize="8"
                 textAnchor="middle"
                 fontFamily="'IBM Plex Mono', monospace"
@@ -69,7 +70,7 @@ const CircularFlowDiagram = () => {
               </text>
               {/* Traveling dot */}
               {isActive && isVisible && (
-                <circle r="4" fill="#22c55e">
+                <circle r="4" fill="var(--primary)">
                   <animate
                     attributeName="cx"
                     from={from.x}
@@ -95,11 +96,11 @@ const CircularFlowDiagram = () => {
         {/* Nodes */}
         {nodes.map((node) => (
           <g key={node.id}>
-            <circle cx={node.x} cy={node.y} r="18" fill="#1e293b" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+            <circle cx={node.x} cy={node.y} r="18" fill="var(--card)" stroke="var(--border)" strokeWidth="1" />
             <text
               x={node.x}
               y={node.y + 1}
-              fill="#f1f5f9"
+              fill="var(--foreground)"
               fontSize="11"
               textAnchor="middle"
               dominantBaseline="middle"
@@ -111,7 +112,7 @@ const CircularFlowDiagram = () => {
             <text
               x={node.x}
               y={node.y + 34}
-              fill="#94a3b8"
+              fill="var(--muted-foreground)"
               fontSize="8"
               textAnchor="middle"
               fontFamily="'DM Sans', sans-serif"

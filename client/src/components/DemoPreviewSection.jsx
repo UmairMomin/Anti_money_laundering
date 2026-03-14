@@ -9,10 +9,10 @@ const entities = [
 ];
 
 const tierColors = {
-  red: { bg: "rgba(239,68,68,0.15)", text: "#ef4444", border: "#ef4444" },
+  red: { bg: "rgba(var(--destructive-rgb),0.15)", text: "var(--destructive)", border: "var(--destructive)" },
   amber: { bg: "rgba(245,158,11,0.15)", text: "#f59e0b", border: "#f59e0b" },
   yellow: { bg: "rgba(234,179,8,0.15)", text: "#eab308", border: "#eab308" },
-  green: { bg: "rgba(34,197,94,0.15)", text: "#22c55e", border: "#22c55e" },
+  green: { bg: "rgba(var(--primary-rgb),0.15)", text: "var(--primary)", border: "var(--primary)" },
 };
 
 const graphNodes = [
@@ -62,13 +62,13 @@ const DemoPreviewSection = () => {
           className="mx-auto max-w-[960px] rounded-2xl border border-border overflow-hidden"
           style={{
             background: "hsl(var(--card))",
-            boxShadow: "0 32px 80px rgba(34,197,94,0.06)",
+            boxShadow: "0 32px 80px rgba(var(--primary-rgb),0.08)",
           }}
         >
           {/* Top bar */}
           <div
             className="flex items-center justify-between px-4 h-11 border-b border-border"
-            style={{ background: "rgba(255,255,255,0.03)" }}
+            style={{ background: "color-mix(in srgb, var(--card) 88%, transparent)" }}
           >
             <div className="flex items-center gap-2">
               <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
@@ -95,7 +95,7 @@ const DemoPreviewSection = () => {
                     <div
                       key={e.name}
                       className="flex items-center justify-between rounded-lg p-2 border border-border hover:border-primary/30 transition cursor-pointer"
-                      style={{ background: "rgba(15,23,42,0.5)" }}
+                      style={{ background: "color-mix(in srgb, var(--secondary) 70%, transparent)" }}
                     >
                       <div>
                         <p className="text-xs text-foreground leading-tight">{e.name}</p>
@@ -131,29 +131,30 @@ const DemoPreviewSection = () => {
                       <line
                         key={i}
                         x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                        stroke={edge.isLoop ? "#ef4444" : "rgba(148,163,184,0.2)"}
+                        stroke={edge.isLoop ? "var(--destructive)" : "var(--muted-foreground)"}
                         strokeWidth={edge.isLoop ? 2 : 1}
                         strokeDasharray={edge.isLoop ? "6 3" : undefined}
+                        strokeOpacity={edge.isLoop ? 1 : 0.25}
                       />
                     );
                   })}
                   {graphNodes.map((node, i) => (
                     <g key={i}>
                       {node.flagged && (
-                        <circle cx={node.x} cy={node.y} r="18" fill="none" stroke="#ef4444" strokeWidth="1" opacity="0.3">
+                        <circle cx={node.x} cy={node.y} r="18" fill="none" stroke="var(--destructive)" strokeWidth="1" opacity="0.3">
                           <animate attributeName="r" values="18;24;18" dur="2s" repeatCount="indefinite" />
                           <animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite" />
                         </circle>
                       )}
                       <circle
                         cx={node.x} cy={node.y} r="14"
-                        fill={node.flagged ? "rgba(239,68,68,0.2)" : "#1e293b"}
-                        stroke={node.flagged ? "#ef4444" : "rgba(255,255,255,0.08)"}
+                        fill={node.flagged ? "rgba(var(--destructive-rgb),0.2)" : "var(--card)"}
+                        stroke={node.flagged ? "var(--destructive)" : "var(--border)"}
                         strokeWidth="1"
                       />
                       <text
                         x={node.x} y={node.y + 1}
-                        fill="#f1f5f9" fontSize="9" textAnchor="middle" dominantBaseline="middle"
+                        fill="var(--foreground)" fontSize="9" textAnchor="middle" dominantBaseline="middle"
                         fontFamily="'IBM Plex Mono', monospace" fontWeight="600"
                       >
                         {node.id}
@@ -161,11 +162,11 @@ const DemoPreviewSection = () => {
                     </g>
                   ))}
                   {/* Traveling dots on a couple of edges */}
-                  <circle r="3" fill="#22c55e">
+                  <circle r="3" fill="var(--primary)">
                     <animate attributeName="cx" values={`${graphNodes[0].x};${graphNodes[1].x}`} dur="2s" repeatCount="indefinite" />
                     <animate attributeName="cy" values={`${graphNodes[0].y};${graphNodes[1].y}`} dur="2s" repeatCount="indefinite" />
                   </circle>
-                  <circle r="3" fill="#22c55e">
+                  <circle r="3" fill="var(--primary)">
                     <animate attributeName="cx" values={`${graphNodes[1].x};${graphNodes[2].x}`} dur="2.5s" repeatCount="indefinite" />
                     <animate attributeName="cy" values={`${graphNodes[1].y};${graphNodes[2].y}`} dur="2.5s" repeatCount="indefinite" />
                   </circle>
