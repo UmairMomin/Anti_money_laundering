@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { motion } from "framer-motion"
-import { Ban, ChevronRight, Code2, Download, ExternalLink, Globe, Image as ImageIcon, Loader2, Sparkles, Terminal, Youtube } from "lucide-react"
+import { Ban, ChevronRight, Code2, Download, ExternalLink, Facebook, Globe, Image as ImageIcon, Instagram, Linkedin, Loader2, Sparkles, Terminal, Twitter, Youtube } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -182,7 +182,7 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
     >
       <div className="px-4 py-2.5 border-b border-border/50 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm font-semibold text-foreground">Pattern classification (score 0–10, threshold 0.75)</span>
+        <span className="text-sm font-semibold text-foreground">Pattern classification (score 0–1, threshold 0.75)</span>
       </div>
 
       <div className="p-4 space-y-4">
@@ -197,7 +197,7 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
           <div className="flex flex-wrap gap-4 text-sm items-baseline">
             <div className="flex items-baseline gap-1.5">
               <span className="text-muted-foreground">Score</span>
-              <span className="font-bold tabular-nums text-foreground">{res.best_risk_score.toFixed(2)} / 10</span>
+              <span className="font-bold tabular-nums text-foreground">{res.best_risk_score.toFixed(2)} / 1</span>
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-muted-foreground">Threshold</span>
@@ -229,7 +229,7 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
                     <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", style.className)}>
                       {style.label}
                     </span>
-                    <span className="ml-auto font-mono text-sm tabular-nums text-foreground">{r.risk_score.toFixed(2)} / 10</span>
+                    <span className="ml-auto font-mono text-sm tabular-nums text-foreground">{r.risk_score.toFixed(2)} / 1</span>
                   </div>
                   {r.top_features && r.top_features.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
@@ -363,6 +363,16 @@ export interface Message {
       high?: { url?: string }
     }
   }> | null
+  socialProfiles?: Array<{
+    platform: string
+    results: Array<{
+      handle?: string
+      url?: string
+      title?: string
+      snippet?: string
+    }>
+  }> | null
+  socialReason?: string | null
   // Optional title for assistant responses, typically the user's prompt.
   promptTitle?: string
   isComplete?: boolean
@@ -409,6 +419,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   chartUrls,
   images,
   videos,
+  socialProfiles,
+  socialReason,
   showTimeStamp = false,
   animation = "scale",
   actions,
@@ -514,6 +526,35 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     hour: "2-digit",
     minute: "2-digit",
   })
+
+  const socialCards = Array.isArray(socialProfiles)
+    ? socialProfiles.flatMap((group) =>
+        (group?.results || []).map((item) => ({
+          platform: group.platform,
+          handle: item?.handle || "",
+          url: item?.url || "",
+          title: item?.title || "",
+          snippet: item?.snippet || "",
+        })),
+      ).filter((item) => item.url)
+    : []
+
+  const getSocialMeta = (platformLabel?: string) => {
+    const label = String(platformLabel || "").toLowerCase()
+    if (label.includes("linkedin")) {
+      return { Icon: Linkedin, classes: "bg-[#0a66c2]/10 text-[#0a66c2]" }
+    }
+    if (label.includes("instagram")) {
+      return { Icon: Instagram, classes: "bg-[#e1306c]/10 text-[#e1306c]" }
+    }
+    if (label.includes("facebook")) {
+      return { Icon: Facebook, classes: "bg-[#1877f2]/10 text-[#1877f2]" }
+    }
+    if (label.includes("twitter") || label.includes("x/") || label === "x") {
+      return { Icon: Twitter, classes: "bg-[#0f1419]/10 text-[#0f1419] dark:text-white" }
+    }
+    return { Icon: Globe, classes: "bg-primary/10 text-primary" }
+  }
 
   // Render message with files if present
   const renderMessageContent = (content: string, promptTitleOverride?: string) => (
@@ -706,6 +747,69 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           </MarkdownRenderer>
           {/* {!isComplete && !isUser && <BlinkingCursor />} */}
         </motion.div>
+
+        {socialCards.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.45, ease: "easeOut" }}
+            className="mt-6 pt-6 border-t border-border/40"
+          >
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Globe className="h-4 w-4" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-foreground">Social profiles</span>
+                  <span className="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] font-bold text-primary">
+                    {socialCards.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {socialCards.map((card, idx) => {
+                const { Icon, classes } = getSocialMeta(card.platform)
+                return (
+                <a
+                  key={`${card.url}-${idx}`}
+                  href={card.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex flex-col gap-2 rounded-2xl border border-border/40 bg-background/40 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)]"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${classes}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {card.platform}
+                      </span>
+                      {card.handle && (
+                        <span className="text-xs font-semibold text-foreground">
+                          @{card.handle}
+                        </span>
+                      )}
+                    </div>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
+                  </div>
+                  <div className="text-[11px] text-muted-foreground line-clamp-2">
+                    {card.title || card.snippet || card.url}
+                  </div>
+                </a>
+              )})}
+            </div>
+          </motion.div>
+        )}
+
+        {socialCards.length === 0 && socialReason && (
+          <div className="mt-6 text-xs text-muted-foreground">
+            Social profiles: {socialReason}
+          </div>
+        )}
         {Array.isArray(videos) && videos.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

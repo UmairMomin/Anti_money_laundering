@@ -20,7 +20,6 @@ import { generateMlSchema } from "../helpers/mlSchemaGenerator.js";
 import { classifyAmlSample } from "../helpers/amlClassifier.js";
 import {
   searchSocialProfiles,
-  formatSocialProfiles,
   isSocialSearchEnabled,
 } from "../helpers/socialSearch.js";
 
@@ -555,20 +554,18 @@ export async function handleChatGenerate(req, res) {
         "I've created a flowchart for you. You can view, download, or expand it below.";
     }
 
+    let socialPayload = null;
     if (shouldIncludeSocial(prompt, options)) {
       console.log("[socialSearch] running (non-stream) for prompt:", prompt);
       const socialResults = await searchSocialProfiles(prompt, {
         location: options.location,
       });
-      const socialText = formatSocialProfiles(socialResults);
-      if (socialText) {
-        finalContent = `${finalContent}\n\n${socialText}`.trim();
-      } else {
-        const reason = isSocialSearchEnabled()
+      const reason = socialResults?.some((r) => r?.results?.length)
+        ? ""
+        : isSocialSearchEnabled()
           ? "No public profiles found."
           : "Social search disabled: missing GOOGLE_API_KEY or GOOGLE_CSE_ID.";
-        finalContent = `${finalContent}\n\nSocial profiles (Google CSE):\n${reason}`.trim();
-      }
+      socialPayload = { socials: socialResults || [], reason };
     }
 
     const { error: saveError } = await supabase.from("messages").insert([
@@ -607,6 +604,8 @@ export async function handleChatGenerate(req, res) {
       codeSnippets: aiCodeSnippets,
       executionOutputs: aiExecutionOutputs,
       excalidrawData: aiExcalidrawData, // Include in API response
+      socialProfiles: socialPayload?.socials || [],
+      socialReason: socialPayload?.reason || "",
       timestamp: new Date().toISOString(),
       processingTime,
       attempts: response?.attempts || 1,
@@ -831,6 +830,39 @@ export async function handleChatStreamGenerate(req, res) {
       res.write(
         `data: ${JSON.stringify({ transactions: transactionContext.structured })}\n\n`,
       );
+    }
+
+    // Kick off ML schema generation in parallel so it matches the same prompt/context
+    const mlContextParts = [];
+    if (prompt) mlContextParts.push(`User request:\n${prompt}`);
+    if (transactionContext?.contextText) {
+      mlContextParts.push(
+        `Structured transactions:\n${transactionContext.contextText.slice(0, 12000)}`,
+      );
+    }
+    if (uploadedText) {
+      mlContextParts.push(
+        `Extracted file text:\n${uploadedText.slice(0, 6000)}`,
+      );
+    }
+    const mlPrompt = mlContextParts.join("\n\n").trim();
+    if (mlPrompt) {
+      Promise.resolve()
+        .then(() => generateMlSchema(mlPrompt))
+        .then((ml) => {
+          if (res.writableEnded) return;
+          res.write(`event: mlSchema\n`);
+          res.write(
+            `data: ${JSON.stringify({
+              payload: ml.payload,
+              pattern: ml.pattern,
+              sample_id: ml.sample_id,
+            })}\n\n`,
+          );
+        })
+        .catch((err) => {
+          console.warn("[mlSchema] generation failed:", err?.message || err);
+        });
     }
 
     if (imageResults.length > 0) {
@@ -1078,24 +1110,16 @@ export async function handleChatStreamGenerate(req, res) {
           const socialResults = await searchSocialProfiles(prompt, {
             location: options.location,
           });
-          const socialText = formatSocialProfiles(socialResults);
-          if (socialText) {
-            const payloadText = `\n\n${socialText}`;
-            streamedContent += payloadText;
-            if (!res.writableEnded) {
-              res.write(`event: message\n`);
-              res.write(`data: ${JSON.stringify({ text: payloadText })}\n\n`);
-            }
-          } else {
-            const reason = isSocialSearchEnabled()
+          const reason = socialResults?.some((r) => r?.results?.length)
+            ? ""
+            : isSocialSearchEnabled()
               ? "No public profiles found."
               : "Social search disabled: missing GOOGLE_API_KEY or GOOGLE_CSE_ID.";
-            const payloadText = `\n\nSocial profiles (Google CSE):\n${reason}`;
-            streamedContent += payloadText;
-            if (!res.writableEnded) {
-              res.write(`event: message\n`);
-              res.write(`data: ${JSON.stringify({ text: payloadText })}\n\n`);
-            }
+          if (!res.writableEnded) {
+            res.write(`event: socials\n`);
+            res.write(
+              `data: ${JSON.stringify({ socials: socialResults || [], reason })}\n\n`,
+            );
           }
         }
 

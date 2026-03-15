@@ -14,7 +14,7 @@ router.post('/stream', authenticate, requireAuth, uploadArray, handleChatStreamG
 // Generate ML-ready JSON (P1–P6 format) from user prompt via Groq for the ML model
 router.post('/ml-generate', authenticate, requireAuth, handleMlGenerate);
 
-// Classify AML sample against P1–P6 patterns (scores 0–10, threshold 0.75)
+// Classify AML sample against P1–P6 patterns (scores 0–1, threshold 0.75)
 router.post('/classify', authenticate, requireAuth, handleClassify);
 
 // Get all conversations for the authenticated user

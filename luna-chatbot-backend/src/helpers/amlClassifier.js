@@ -60,7 +60,7 @@ function clampScore(v) {
   const n = Number(v);
   if (Number.isNaN(n)) return 0;
   if (n < 0) return 0;
-  if (n >= 10) return 9.99;
+  if (n >= 1) return 0.99;
   return Math.round(n * 100) / 100;
 }
 
@@ -90,7 +90,7 @@ function normalizePatternIndex(name) {
   return Number.isNaN(idx) ? null : idx;
 }
 
-function scoreFallback(rng, min = 0.18, max = 1.15) {
+function scoreFallback(rng, min = 0.12, max = 0.85) {
   return Math.round((min + (max - min) * rng()) * 100) / 100;
 }
 
@@ -108,12 +108,12 @@ function pickFeatures(rng, list, min = 1, max = 3) {
 
 function normalizeDecision(score) {
   if (score < THRESHOLD) return "not_suspicious";
-  if (score >= 3) return "highly_suspicious";
+  if (score >= 0.9) return "highly_suspicious";
   return "likely_suspicious";
 }
 
 /**
- * Classify an AML sample against P1–P6 patterns. Returns scores 0.0–9.99 (never 10), threshold 0.75.
+ * Classify an AML sample against P1–P6 patterns. Returns scores 0.0–1.0 (never 1.0), threshold 0.75.
  * @param {object} sample - ML schema payload (entities, transactions, invoices, features, etc.)
  * @returns {Promise<{ best_pattern, best_risk_score, best_threshold, best_above_threshold, best_decision, all_results }>}
  */
@@ -127,7 +127,7 @@ export async function classifyAmlSample(sample) {
   }
 
   const startedAt = Date.now();
-  const userMessage = `Classify this AML/fraud sample. Output only valid JSON with best_pattern, best_risk_score (0–9.99, never 10), best_threshold: 0.75, best_above_threshold, best_decision, and all_results (all 6 patterns with pattern, risk_score, threshold, above_threshold, decision, top_features).\n\nSample:\n${JSON.stringify(sample, null, 0).slice(0, 12000)}`;
+  const userMessage = `Classify this AML/fraud sample. Output only valid JSON with best_pattern, best_risk_score (0–1, never 1.0), best_threshold: 0.75, best_above_threshold, best_decision, and all_results (all 6 patterns with pattern, risk_score, threshold, above_threshold, decision, top_features).\n\nSample:\n${JSON.stringify(sample, null, 0).slice(0, 12000)}`;
 
   const body = {
     model: GROQ_MODEL,
@@ -200,8 +200,8 @@ export async function classifyAmlSample(sample) {
   for (const entry of all_results) {
     if (entry.risk_score > best.risk_score) best = entry;
   }
-  if (best.risk_score < 1.25) {
-    const boosted = Math.min(9.99, Math.round((best.risk_score + 0.6 + rng() * 1.6) * 100) / 100);
+  if (best.risk_score < 0.6) {
+    const boosted = Math.min(0.99, Math.round((best.risk_score + 0.12 + rng() * 0.2) * 100) / 100);
     best.risk_score = boosted;
     best.above_threshold = boosted >= THRESHOLD;
     best.decision = normalizeDecision(boosted);

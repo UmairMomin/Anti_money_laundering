@@ -103,6 +103,29 @@ function normalizeVideoResults(raw) {
   return normalized.length > 0 ? normalized : undefined
 }
 
+function normalizeSocialProfiles(raw) {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((group) => {
+      if (!group || typeof group !== "object") return null
+      const platform = typeof group.platform === "string" ? group.platform : "Social"
+      const results = Array.isArray(group.results) ? group.results : []
+      const normalizedResults = results
+        .map((item) => {
+          if (!item || typeof item !== "object") return null
+          return {
+            handle: typeof item.handle === "string" ? item.handle : "",
+            url: typeof item.url === "string" ? item.url : "",
+            title: typeof item.title === "string" ? item.title : "",
+            snippet: typeof item.snippet === "string" ? item.snippet : "",
+          }
+        })
+        .filter((item) => item && item.url)
+      return { platform, results: normalizedResults }
+    })
+    .filter((g) => g && g.results.length > 0)
+}
+
 function applyMermaidReplacements(content, blocks) {
   if (typeof content !== "string" || !Array.isArray(blocks) || blocks.length === 0) return content
   return blocks.reduce((acc, block) => {
@@ -410,6 +433,8 @@ export default function ChatPage() {
       excalidrawData: message.excalidraw ?? message.excalidraw_data ?? message.excalidrawData ?? undefined,
       images: normalizeImageResults(message?.images),
       videos: normalizedVideos,
+      socialProfiles: normalizeSocialProfiles(message?.socialProfiles ?? message?.socials),
+      socialReason: typeof message?.socialReason === "string" ? message.socialReason : "",
     }
   }, [])
 
@@ -499,15 +524,6 @@ export default function ChatPage() {
       let hasGeminiTransactions = false
 
       const promptText = typeof userContent === "string" ? userContent.trim() : ""
-      const hasAttachments = attachments && attachments.length > 0
-      const mlPrompt = promptText || (hasAttachments ? "Generate a single AML/fraud pattern sample (P1-P6) from transaction or entity data." : "")
-      const mlPromise = mlPrompt
-        ? fetch(`${LUNA_CHAT_BASE}/ml-generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-            body: JSON.stringify({ prompt: mlPrompt }),
-          }).catch((err) => { console.warn("ML generate parallel call failed:", err); return null })
-        : null
 
       let response
       if (attachments && attachments.length > 0) {
@@ -548,20 +564,7 @@ export default function ChatPage() {
         }
       }
 
-      if (mlPromise) {
-        mlPromise.then(async (mlRes) => {
-          if (!mlRes?.ok) return
-          try {
-            const data = await mlRes.json()
-            const mid = assistantMessageIdRef.current
-            const payload = data.payload
-            const pattern = data.pattern
-            const sampleId = data.sample_id
-            if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
-            if (mid && payload && typeof payload === "object") void classifySample(payload, mid)
-          } catch (_) {}
-        }).catch(() => {})
-      }
+      // ML schema now arrives via SSE `mlSchema` event from backend to keep it aligned with the stream context.
 
       if (!response.ok) throw new Error((await response.text()) || "Failed to get response from the API")
 
@@ -571,7 +574,7 @@ export default function ChatPage() {
       assistantMessageIdRef.current = assistantMessageId
       setMessages((prev) => [...prev, {
         id: assistantMessageId, role: "assistant", content: "", createdAt: new Date(),
-        sources: [], chartUrl: null, chartUrls: [], images: [], promptTitle: userContent, isComplete: false,
+        sources: [], chartUrl: null, chartUrls: [], images: [], videos: [], socialProfiles: [], socialReason: "", promptTitle: userContent, isComplete: false,
       }])
 
       let resolvedConversationId = conversationId || null
@@ -618,6 +621,22 @@ export default function ChatPage() {
           } else if (currentEvent === "sources" && parsed.sources && Array.isArray(parsed.sources)) {
             streamedSources = parsed.sources
             setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, sources: streamedSources } : msg))
+          } else if (currentEvent === "mlSchema") {
+            const payload = parsed?.payload ?? parsed
+            const pattern = typeof parsed?.pattern === "string" ? parsed.pattern : undefined
+            const sampleId = typeof parsed?.sample_id === "string" ? parsed.sample_id : undefined
+            if (payload && typeof payload === "object") {
+              setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
+              void classifySample(payload, assistantMessageId)
+            }
+          } else if (currentEvent === "socials") {
+            const socialProfiles = normalizeSocialProfiles(parsed?.socials ?? parsed)
+            const socialReason = typeof parsed?.reason === "string" ? parsed.reason : ""
+            if (socialProfiles.length > 0 || socialReason) {
+              setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId
+                ? { ...msg, socialProfiles, socialReason }
+                : msg))
+            }
           } else if (currentEvent === "code" && parsed.code) {
             streamedCodeSnippets = [...(streamedCodeSnippets ?? []), { language: typeof parsed.language === "string" ? parsed.language : undefined, code: String(parsed.code) }]
             setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, codeSnippets: streamedCodeSnippets } : msg))
