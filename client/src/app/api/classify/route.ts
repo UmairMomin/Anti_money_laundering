@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-
+import { CLASSIFY_API_URL } from "@/utils/commonHelper";
 /**
  * Proxies to POST /classify (e.g. api/app.py).
  * Body: Option 1 — { pattern: "P1", sample: { sample_id, entities, transactions, features } }
  *       Option 2 — { P1: { ... }, P2: { ... }, ... }
  * Env: CLASSIFY_API_URL = base URL only (e.g. http://localhost:5002). Path /classify is appended.
  */
-const CLASSIFY_BASE = process.env.CLASSIFY_API_URL || "http://localhost:8002";
+const CLASSIFY_BASE = CLASSIFY_API_URL || "http://localhost:8002";
 const CLASSIFY_ENDPOINT = `${CLASSIFY_BASE.replace(/\/$/, "")}/classify`;
 
 export async function POST(request: Request) {
