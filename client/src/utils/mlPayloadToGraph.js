@@ -52,6 +52,37 @@ export function mlPayloadToGraph(payload) {
   let graphMeta = { title: "", subtitle: "" };
   if (!payload || typeof payload !== "object") return { nodes, links, graph: graphMeta };
 
+  // Universal graph shape support (payload.graph + nodes + edges)
+  const universal = payload.payload && typeof payload.payload === "object" ? payload.payload : payload;
+  if (Array.isArray(universal.nodes) && Array.isArray(universal.edges)) {
+    const graphPayload = universal.graph && typeof universal.graph === "object" ? universal.graph : {};
+    graphMeta = {
+      title: typeof graphPayload.title === "string" ? graphPayload.title.trim() : "",
+      subtitle: typeof graphPayload.subtitle === "string" ? graphPayload.subtitle.trim() : "",
+    };
+
+    universal.nodes.forEach((n) => {
+      if (!n || !n.id) return;
+      const label = n.label || n.display_label || n.id;
+      const group = n.type || "default";
+      const tooltip = typeof n.description === "string" ? n.description : "";
+      const size = typeof n.size === "number" ? n.size : (Array.isArray(n.tags) && n.tags.includes("shell") ? 6 : 10);
+      nodes.push(node(n.id, label, group, size, tooltip));
+    });
+
+    universal.edges.forEach((e) => {
+      if (!e) return;
+      const source = e.from || e.source;
+      const target = e.to || e.target;
+      if (!source || !target) return;
+      const label = e.label || e.edge_label || [e.type, e.amount?.value != null ? `${e.amount.value} ${e.amount.unit || ""}`.trim() : "", e.date || ""].filter(Boolean).join(" ");
+      const weight = typeof e.weight === "number" ? e.weight : (e.amount?.value ? Math.min(3, 0.5 + e.amount.value / 10) : 1);
+      links.push(link(source, target, label, weight));
+    });
+
+    return { nodes, links, graph: graphMeta };
+  }
+
   const entities = payload.entities || {};
   const graphPayload = payload.graph && typeof payload.graph === "object" ? payload.graph : {};
   graphMeta = {

@@ -18,6 +18,11 @@ import { processMermaidBlocks } from "../helpers/mermaid.js";
 import { runFeatherlessChat } from "../helpers/featherless.js";
 import { generateMlSchema } from "../helpers/mlSchemaGenerator.js";
 import { classifyAmlSample } from "../helpers/amlClassifier.js";
+import {
+  searchSocialProfiles,
+  formatSocialProfiles,
+  isSocialSearchEnabled,
+} from "../helpers/socialSearch.js";
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 const FEATHERLESS_MODEL = env.FEATHERLESS_MODEL || "Qwen/Qwen2.5-32B-Instruct";
@@ -37,6 +42,12 @@ const STREAM_CLOSE_DELAY_MS = 60;
 const sleep = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 const MAX_TRANSACTION_ROWS = 200;
 const MAX_TRANSACTION_CONTEXT_CHARS = 20000;
+
+function shouldIncludeSocial(prompt, options = {}) {
+  if (typeof options.includeSocial === "boolean") return options.includeSocial;
+  const text = String(prompt || "").trim();
+  return text.length > 0;
+}
 
 function isExcelLikeFile(file) {
   if (!file) return false;
@@ -64,8 +75,73 @@ function parseExcelToJson(file) {
       "[transactions] Failed to parse excel:",
       error?.message || error,
     );
-    return [];
+    try {
+      const rawText = Buffer.from(file.buffer || "").toString("utf8");
+      const text = rawText.replace(/\r\n/g, "\n").trim();
+      if (!text) return [];
+      const firstLine = text.split("\n")[0] || "";
+      const delimiter = firstLine.includes("\t")
+        ? "\t"
+        : firstLine.includes(";")
+          ? ";"
+          : ",";
+
+      const rows = parseDelimitedTextToObjects(text, delimiter);
+      return Array.isArray(rows) ? rows : [];
+    } catch (_) {
+      return [];
+    }
   }
+}
+
+function parseDelimitedTextToObjects(text, delimiter) {
+  const lines = String(text || "")
+    .split("\n")
+    .map((l) => l.trimEnd())
+    .filter((l) => l.length > 0);
+  if (lines.length === 0) return [];
+
+  const parseLine = (line) => {
+    const out = [];
+    let cur = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i];
+      const next = line[i + 1];
+      if (ch === '"' && next === '"') {
+        cur += '"';
+        i += 1;
+        continue;
+      }
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+        continue;
+      }
+      if (ch === delimiter && !inQuotes) {
+        out.push(cur.trim());
+        cur = "";
+        continue;
+      }
+      cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  };
+
+  const headers = parseLine(lines[0]).map((h, i) =>
+    h ? h.replace(/\s+/g, "_").toLowerCase() : `col_${i + 1}`,
+  );
+  const rows = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const values = parseLine(lines[i]);
+    if (values.every((v) => v === "")) continue;
+    const row = {};
+    for (let j = 0; j < headers.length; j += 1) {
+      row[headers[j]] = values[j] ?? null;
+    }
+    rows.push(row);
+  }
+  return rows;
 }
 
 function extractJsonPayload(text = "") {
@@ -477,6 +553,22 @@ export async function handleChatGenerate(req, res) {
     if (!finalContent && aiExcalidrawData && aiExcalidrawData.length > 0) {
       finalContent =
         "I've created a flowchart for you. You can view, download, or expand it below.";
+    }
+
+    if (shouldIncludeSocial(prompt, options)) {
+      console.log("[socialSearch] running (non-stream) for prompt:", prompt);
+      const socialResults = await searchSocialProfiles(prompt, {
+        location: options.location,
+      });
+      const socialText = formatSocialProfiles(socialResults);
+      if (socialText) {
+        finalContent = `${finalContent}\n\n${socialText}`.trim();
+      } else {
+        const reason = isSocialSearchEnabled()
+          ? "No public profiles found."
+          : "Social search disabled: missing GOOGLE_API_KEY or GOOGLE_CSE_ID.";
+        finalContent = `${finalContent}\n\nSocial profiles (Google CSE):\n${reason}`.trim();
+      }
     }
 
     const { error: saveError } = await supabase.from("messages").insert([
@@ -950,6 +1042,16 @@ export async function handleChatStreamGenerate(req, res) {
       }
 
       try {
+        if (!streamedContent) {
+          const fallbackMessage =
+            "I couldn't generate a response from the model for that upload. Try a smaller file or add a specific question.";
+          streamedContent = fallbackMessage;
+          if (!res.writableEnded) {
+            res.write(`event: message\n`);
+            res.write(`data: ${JSON.stringify({ text: fallbackMessage })}\n\n`);
+          }
+        }
+
         let mermaidProcessingResult = { content: streamedContent, blocks: [] };
         try {
           mermaidProcessingResult = await processMermaidBlocks({
@@ -969,6 +1071,32 @@ export async function handleChatStreamGenerate(req, res) {
             "Mermaid processing failed:",
             mermaidError?.message || mermaidError,
           );
+        }
+
+        if (shouldIncludeSocial(prompt, options)) {
+          console.log("[socialSearch] running (stream) for prompt:", prompt);
+          const socialResults = await searchSocialProfiles(prompt, {
+            location: options.location,
+          });
+          const socialText = formatSocialProfiles(socialResults);
+          if (socialText) {
+            const payloadText = `\n\n${socialText}`;
+            streamedContent += payloadText;
+            if (!res.writableEnded) {
+              res.write(`event: message\n`);
+              res.write(`data: ${JSON.stringify({ text: payloadText })}\n\n`);
+            }
+          } else {
+            const reason = isSocialSearchEnabled()
+              ? "No public profiles found."
+              : "Social search disabled: missing GOOGLE_API_KEY or GOOGLE_CSE_ID.";
+            const payloadText = `\n\nSocial profiles (Google CSE):\n${reason}`;
+            streamedContent += payloadText;
+            if (!res.writableEnded) {
+              res.write(`event: message\n`);
+              res.write(`data: ${JSON.stringify({ text: payloadText })}\n\n`);
+            }
+          }
         }
 
         if (streamedSources.size > 0) {

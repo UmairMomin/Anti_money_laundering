@@ -173,9 +173,6 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
 
   const res = data as ClassifyResponse
   const bestStyle = DECISION_STYLE[res.best_decision] ?? DECISION_STYLE.not_suspicious
-  const modelLabel = typeof res.model === "string" ? res.model : null
-  const inferenceMs = typeof res.inference_ms === "number" ? Math.round(res.inference_ms) : null
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -186,12 +183,6 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
       <div className="px-4 py-2.5 border-b border-border/50 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary shrink-0" />
         <span className="text-sm font-semibold text-foreground">Pattern classification (score 0–10, threshold 0.75)</span>
-        {(modelLabel || inferenceMs != null) && (
-          <span className="ml-auto text-[11px] font-medium text-muted-foreground">
-            {modelLabel ? `Model: ${modelLabel}` : "Model: AML Classifier"}
-            {inferenceMs != null && ` · Inference: ${inferenceMs}ms`}
-          </span>
-        )}
       </div>
 
       <div className="p-4 space-y-4">

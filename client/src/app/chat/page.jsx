@@ -40,14 +40,66 @@ function normalizeImageResults(raw) {
     .map((item) => {
       if (!item || typeof item !== "object") return null
       const data = item
-      const imageUrl = typeof data.imageUrl === "string" ? data.imageUrl : null
-      const pageUrl = typeof data.pageUrl === "string" ? data.pageUrl : null
+      const imageUrl =
+        typeof data.imageUrl === "string" ? data.imageUrl
+        : typeof data.url === "string" ? data.url
+        : typeof data.link === "string" ? data.link
+        : typeof data.src === "string" ? data.src
+        : typeof data.image?.url === "string" ? data.image.url
+        : typeof data.image?.link === "string" ? data.image.link
+        : null
+      const pageUrl =
+        typeof data.pageUrl === "string" ? data.pageUrl
+        : typeof data.contextLink === "string" ? data.contextLink
+        : typeof data.image?.contextLink === "string" ? data.image.contextLink
+        : null
       const title = typeof data.title === "string" ? data.title : null
-      const thumbnailUrl = typeof data.thumbnailUrl === "string" ? data.thumbnailUrl : null
+      const thumbnailUrl =
+        typeof data.thumbnailUrl === "string" ? data.thumbnailUrl
+        : typeof data.thumbnail === "string" ? data.thumbnail
+        : typeof data.image?.thumbnailLink === "string" ? data.image.thumbnailLink
+        : null
       if (!imageUrl) return null
       return { title, imageUrl, pageUrl, thumbnailUrl }
     })
     .filter((entry) => entry !== null)
+  return normalized.length > 0 ? normalized : undefined
+}
+
+function normalizeVideoResults(raw) {
+  if (!raw) return undefined
+  const source = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.results)
+      ? raw.results
+      : Array.isArray(raw?.items)
+        ? raw.items
+        : []
+  if (!Array.isArray(source)) return undefined
+  const normalized = source
+    .map((item) => {
+      if (!item || typeof item !== "object") return null
+      const videoId =
+        typeof item.videoId === "string" ? item.videoId
+        : typeof item.id === "string" ? item.id
+        : typeof item.video_id === "string" ? item.video_id
+        : null
+      const url =
+        typeof item.url === "string" ? item.url
+        : videoId ? `https://www.youtube.com/watch?v=${videoId}` : null
+      if (!url && !videoId) return null
+      return {
+        videoId,
+        url,
+        title: item.title,
+        description: item.description,
+        channelTitle: item.channelTitle,
+        channelId: item.channelId,
+        publishedAt: item.publishedAt,
+        thumbnails: item.thumbnails,
+      }
+    })
+    .filter(Boolean)
   return normalized.length > 0 ? normalized : undefined
 }
 
@@ -216,8 +268,8 @@ export default function ChatPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [loadingConversationId, setLoadingConversationId] = useState(null)
   const [assistantStatuses, setAssistantStatuses] = useState(createInitialAssistantStatuses())
-  const [includeYouTube, setIncludeYouTube] = useState(false)
-  const [includeImageSearch, setIncludeImageSearch] = useState(false)
+  const [includeYouTube, setIncludeYouTube] = useState(true)
+  const [includeImageSearch, setIncludeImageSearch] = useState(true)
   const [viewportHeight, setViewportHeight] = useState("100dvh")
   const [historyQuery, setHistoryQuery] = useState("")
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
@@ -344,7 +396,7 @@ export default function ChatPage() {
   const normalizeMessageFromHistory = useCallback((message) => {
     const role = message?.role === "model" ? "assistant" : message?.role ?? "assistant"
     const createdAtIso = message?.created_at ?? message?.createdAt
-    const normalizedVideos = Array.isArray(message?.videos) ? message.videos : undefined
+    const normalizedVideos = normalizeVideoResults(message?.videos ?? message?.youtubeResults)
     return {
       id: message?.id ? String(message.id) : crypto.randomUUID(),
       role: role === "assistant" || role === "user" || role === "system" ? role : "assistant",
@@ -486,10 +538,12 @@ export default function ChatPage() {
             body: JSON.stringify({ sample }),
           })
           const classificationResponse = res.ok ? await res.json() : { error: res.statusText || "Classification failed" }
-          const renderDelayMs = 450 + Math.floor(Math.random() * 700)
+          const renderDelayMs = 900 + Math.floor(Math.random() * 600)
           await new Promise((resolve) => setTimeout(resolve, renderDelayMs))
           if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse } : msg))
         } catch (err) {
+          const renderDelayMs = 900 + Math.floor(Math.random() * 600)
+          await new Promise((resolve) => setTimeout(resolve, renderDelayMs))
           if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: err?.message || "Classification request failed" } } : msg))
         }
       }
@@ -558,8 +612,8 @@ export default function ChatPage() {
             }
           } else if (currentEvent === "transactions" && parsed.transactions) {
             hasGeminiTransactions = true
-          } else if (currentEvent === "images" && parsed.images && Array.isArray(parsed.images)) {
-            const normalized = normalizeImageResults(parsed.images)
+          } else if (currentEvent === "images") {
+            const normalized = normalizeImageResults(parsed?.images ?? parsed?.imageResults ?? parsed?.items ?? parsed)
             if (normalized) { streamedImages = normalized; setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, images: normalized } : msg)) }
           } else if (currentEvent === "sources" && parsed.sources && Array.isArray(parsed.sources)) {
             streamedSources = parsed.sources
@@ -575,9 +629,12 @@ export default function ChatPage() {
             const updatedContent = applyMermaidReplacements(streamedContent, streamedMermaidBlocks)
             if (updatedContent !== streamedContent) streamedContent = updatedContent
             setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, content: streamedContent, mermaidBlocks: streamedMermaidBlocks, isComplete: false } : msg))
-          } else if (currentEvent === "youtubeResults" && parsed.videos && Array.isArray(parsed.videos)) {
-            streamedVideos = parsed.videos
-            setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, videos: parsed.videos } : msg))
+          } else if (currentEvent === "youtubeResults") {
+            const normalizedVideos = normalizeVideoResults(parsed?.videos ?? parsed)
+            if (normalizedVideos && normalizedVideos.length > 0) {
+              streamedVideos = normalizedVideos
+              setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, videos: normalizedVideos } : msg))
+            }
           } else if (currentEvent === "excalidraw" && parsed.excalidrawData && Array.isArray(parsed.excalidrawData)) {
             setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, excalidrawData: parsed.excalidrawData } : msg))
           } else if (currentEvent === "finish" && parsed.finishReason) {

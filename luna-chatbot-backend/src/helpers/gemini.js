@@ -14,23 +14,23 @@ import env from "../config/env.js";
 
 // Map of expert types to their corresponding prompts
 const EXPERT_PROMPTS = {
-  'research': buildAmlAssistantPrompt(),
-  'real-estate': REAL_ESTATE_EXPERT_PROMPT,
-  'crypto': CRYPTO_EXPERT_PROMPT,
-  'investment': INVESTMENT_EXPERT_PROMPT,
-  'stock': STOCK_EXPERT_PROMPT,
-  'retirement-tax': RETIREMENT_TAX_EXPERT_PROMPT,
-  'default': buildAmlAssistantPrompt(),
+  research: buildAmlAssistantPrompt(),
+  "real-estate": REAL_ESTATE_EXPERT_PROMPT,
+  crypto: CRYPTO_EXPERT_PROMPT,
+  investment: INVESTMENT_EXPERT_PROMPT,
+  stock: STOCK_EXPERT_PROMPT,
+  "retirement-tax": RETIREMENT_TAX_EXPERT_PROMPT,
+  default: buildAmlAssistantPrompt(),
 };
 
-const GEMINI_API_KEYS = [
-  env.GEMINI_API_KEY,
-  env.GEMINI_API_KEY2
-].filter(Boolean);
+const GEMINI_API_KEYS = [env.GEMINI_API_KEY, env.GEMINI_API_KEY2].filter(
+  Boolean,
+);
 
 export const MODEL_ID = "gemini-2.5-flash-lite";
 export const GENERATE_CONTENT_API = "generateContent";
-export const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+export const BASE_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
 
 // Configuration constants
 const CONFIG = {
@@ -46,27 +46,29 @@ const CONFIG = {
 // Excalidraw flowchart generation function declaration for Gemini
 const EXCALIDRAW_FUNCTION_DECLARATION = {
   name: "generate_excalidraw_flowchart",
-  description: "Generate an interactive diagram using Excalidraw. Use this function when the user asks for ANY type of diagram, chart, flowchart, visual representation, or graphical illustration including: flowcharts, process diagrams, workflow diagrams, use case diagrams, sequence diagrams, system architecture diagrams, data flow diagrams, mind maps, organizational charts, network diagrams, or any visual representation of concepts, processes, or relationships. This function returns Excalidraw-compatible JSON that renders as an interactive, editable diagram.",
+  description:
+    "Generate an interactive diagram using Excalidraw. Use this function when the user asks for ANY type of diagram, chart, flowchart, visual representation, or graphical illustration including: flowcharts, process diagrams, workflow diagrams, use case diagrams, sequence diagrams, system architecture diagrams, data flow diagrams, mind maps, organizational charts, network diagrams, or any visual representation of concepts, processes, or relationships. This function returns Excalidraw-compatible JSON that renders as an interactive, editable diagram.",
   parameters: {
     type: "object",
     properties: {
       prompt: {
         type: "string",
-        description: "Detailed description of the diagram to generate. Include all elements, relationships, flow direction, and labels. Be specific about what to show. Examples: 'User authentication flow with login and signup', 'E-commerce checkout process', 'Use case diagram for banking app with actors and use cases', 'System architecture showing frontend, backend, and database', 'Class diagram for e-commerce system'"
+        description:
+          "Detailed description of the diagram to generate. Include all elements, relationships, flow direction, and labels. Be specific about what to show. Examples: 'User authentication flow with login and signup', 'E-commerce checkout process', 'Use case diagram for banking app with actors and use cases', 'System architecture showing frontend, backend, and database', 'Class diagram for e-commerce system'",
       },
       style: {
         type: "string",
         description: "Visual style preference for the diagram",
-        enum: ["minimal", "modern", "detailed"]
+        enum: ["minimal", "modern", "detailed"],
       },
       complexity: {
         type: "string",
         description: "Complexity level of the diagram",
-        enum: ["simple", "moderate", "detailed"]
-      }
+        enum: ["simple", "moderate", "detailed"],
+      },
     },
-    required: ["prompt"]
-  }
+    required: ["prompt"],
+  },
 };
 
 // Retryable HTTP status codes
@@ -90,8 +92,9 @@ class ChatHistoryManager {
   set(userId, messages) {
     // Implement LRU eviction if we exceed max users
     if (this.history.size >= this.maxUsers && !this.history.has(userId)) {
-      const oldestUser = [...this.accessOrder.entries()]
-        .sort((a, b) => a[1] - b[1])[0][0];
+      const oldestUser = [...this.accessOrder.entries()].sort(
+        (a, b) => a[1] - b[1],
+      )[0][0];
       this.history.delete(oldestUser);
       this.accessOrder.delete(oldestUser);
     }
@@ -119,7 +122,8 @@ class APIKeyManager {
     return this.keys[this.currentIndex];
   }
 
-  markKeyFailed(keyIndex, retryAfter = 60000) { // 1 minute default
+  markKeyFailed(keyIndex, retryAfter = 60000) {
+    // 1 minute default
     this.failedKeys.add(keyIndex);
     this.keyRetryTime.set(keyIndex, Date.now() + retryAfter);
   }
@@ -165,14 +169,18 @@ async function fetchPageTitle(url) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CONFIG.TITLE_FETCH_TIMEOUT);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      CONFIG.TITLE_FETCH_TIMEOUT,
+    );
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       },
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -185,18 +193,18 @@ async function fetchPageTitle(url) {
 
     // Extract title using regex (simple but effective for most cases)
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    let title = titleMatch ? titleMatch[1].trim() : '';
+    let title = titleMatch ? titleMatch[1].trim() : "";
 
     // Clean up title
     if (title) {
       title = title
-        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-        .replace(/[\r\n\t]/g, ' ') // Replace newlines and tabs with spaces
+        .replace(/\s+/g, " ") // Replace multiple spaces with single space
+        .replace(/[\r\n\t]/g, " ") // Replace newlines and tabs with spaces
         .trim();
 
       // Truncate if too long
       if (title.length > CONFIG.MAX_TITLE_LENGTH) {
-        title = title.substring(0, CONFIG.MAX_TITLE_LENGTH - 3) + '...';
+        title = title.substring(0, CONFIG.MAX_TITLE_LENGTH - 3) + "...";
       }
     }
 
@@ -204,9 +212,9 @@ async function fetchPageTitle(url) {
     if (!title) {
       try {
         const urlObj = new URL(url);
-        title = urlObj.hostname.replace(/^www\./, '');
+        title = urlObj.hostname.replace(/^www\./, "");
       } catch (e) {
-        title = 'Untitled';
+        title = "Untitled";
       }
     }
 
@@ -220,11 +228,11 @@ async function fetchPageTitle(url) {
     // Fallback to domain name
     try {
       const urlObj = new URL(url);
-      const fallback = urlObj.hostname.replace(/^www\./, '');
+      const fallback = urlObj.hostname.replace(/^www\./, "");
       titleCache.set(url, fallback);
       return fallback;
     } catch (e) {
-      const fallback = 'Link';
+      const fallback = "Link";
       titleCache.set(url, fallback);
       return fallback;
     }
@@ -254,7 +262,7 @@ async function processSourcesWithTitles(sources) {
     try {
       const batchResults = await Promise.allSettled(batchPromises);
       batchResults.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           processedSources.push(result.value);
         } else {
           // Fallback if promise rejected
@@ -263,25 +271,25 @@ async function processSourcesWithTitles(sources) {
             const urlObj = new URL(url);
             processedSources.push({
               url,
-              title: urlObj.hostname.replace(/^www\./, '')
+              title: urlObj.hostname.replace(/^www\./, ""),
             });
           } catch (e) {
-            processedSources.push({ url, title: 'Link' });
+            processedSources.push({ url, title: "Link" });
           }
         }
       });
     } catch (error) {
-      console.warn('Error processing source batch:', error);
+      console.warn("Error processing source batch:", error);
       // Add remaining URLs with fallback titles
-      batch.forEach(url => {
+      batch.forEach((url) => {
         try {
           const urlObj = new URL(url);
           processedSources.push({
             url,
-            title: urlObj.hostname.replace(/^www\./, '')
+            title: urlObj.hostname.replace(/^www\./, ""),
           });
         } catch (e) {
-          processedSources.push({ url, title: 'Link' });
+          processedSources.push({ url, title: "Link" });
         }
       });
     }
@@ -290,7 +298,13 @@ async function processSourcesWithTitles(sources) {
 }
 
 async function processGeminiResponse(response) {
-  const result = { content: '', sources: new Set(), codeSnippets: [], executionOutputs: [], functionCalls: [] };
+  const result = {
+    content: "",
+    sources: new Set(),
+    codeSnippets: [],
+    executionOutputs: [],
+    functionCalls: [],
+  };
 
   try {
     // Handle streaming response (array of chunks) vs single response
@@ -310,10 +324,16 @@ async function processGeminiResponse(response) {
 
         // Check for prompt feedback only in first chunk
         if (i === 0 && chunk.promptFeedback) {
-          console.warn('Prompt feedback:', chunk.promptFeedback);
+          console.warn("Prompt feedback:", chunk.promptFeedback);
           if (chunk.promptFeedback.blockReason) {
             result.content = `Content blocked: ${chunk.promptFeedback.blockReason}`;
-            return { content: result.content, sources: [], codeSnippets: [], executionOutputs: [], functionCalls: [] };
+            return {
+              content: result.content,
+              sources: [],
+              codeSnippets: [],
+              executionOutputs: [],
+              functionCalls: [],
+            };
           }
         }
         continue;
@@ -330,10 +350,12 @@ async function processGeminiResponse(response) {
       // Extract content from this chunk
       const parts = candidate.content?.parts;
       if (parts && Array.isArray(parts)) {
-        const textParts = parts.filter(part => part.text && typeof part.text === 'string');
+        const textParts = parts.filter(
+          (part) => part.text && typeof part.text === "string",
+        );
 
         if (textParts.length > 0) {
-          const chunkContent = textParts.map(part => part.text).join('');
+          const chunkContent = textParts.map((part) => part.text).join("");
           result.content += chunkContent;
           hasValidContent = true;
           console.log(`Chunk ${i + 1} added ${chunkContent.length} characters`);
@@ -342,25 +364,31 @@ async function processGeminiResponse(response) {
         // Capture function calls (e.g., Excalidraw flowchart generation)
         for (const part of parts) {
           if (part.functionCall) {
-            console.log('Function call detected:', part.functionCall);
+            console.log("Function call detected:", part.functionCall);
             result.functionCalls.push({
               name: part.functionCall.name,
-              args: part.functionCall.args
+              args: part.functionCall.args,
             });
           }
 
           // Capture executable code and code execution results when present
-          if (part.executableCode && typeof part.executableCode.code === 'string') {
+          if (
+            part.executableCode &&
+            typeof part.executableCode.code === "string"
+          ) {
             result.codeSnippets.push({
-              language: part.executableCode.language || 'unknown',
-              code: part.executableCode.code
+              language: part.executableCode.language || "unknown",
+              code: part.executableCode.code,
             });
           }
 
-          if (part.codeExecutionResult && typeof part.codeExecutionResult.output === 'string') {
+          if (
+            part.codeExecutionResult &&
+            typeof part.codeExecutionResult.output === "string"
+          ) {
             result.executionOutputs.push({
-              outcome: part.codeExecutionResult.outcome || 'unknown',
-              output: part.codeExecutionResult.output
+              outcome: part.codeExecutionResult.outcome || "unknown",
+              output: part.codeExecutionResult.output,
             });
           }
         }
@@ -370,19 +398,31 @@ async function processGeminiResponse(response) {
       const groundingChunks = candidate.groundingMetadata?.groundingChunks;
       if (groundingChunks && Array.isArray(groundingChunks)) {
         groundingChunks
-          .filter(chunk => chunk.web?.uri)
-          .forEach(chunk => result.sources.add(chunk.web.uri));
+          .filter((chunk) => chunk.web?.uri)
+          .forEach((chunk) => result.sources.add(chunk.web.uri));
       }
     }
 
     // Check final finish reason for blocking
-    if (lastFinishReason === 'SAFETY') {
-      result.content = 'Response blocked due to safety filters';
-      return { content: result.content, sources: [], codeSnippets: [], executionOutputs: [], functionCalls: [] };
+    if (lastFinishReason === "SAFETY") {
+      result.content = "Response blocked due to safety filters";
+      return {
+        content: result.content,
+        sources: [],
+        codeSnippets: [],
+        executionOutputs: [],
+        functionCalls: [],
+      };
     }
-    if (lastFinishReason === 'RECITATION') {
-      result.content = 'Response blocked due to recitation concerns';
-      return { content: result.content, sources: [], codeSnippets: [], executionOutputs: [], functionCalls: [] };
+    if (lastFinishReason === "RECITATION") {
+      result.content = "Response blocked due to recitation concerns";
+      return {
+        content: result.content,
+        sources: [],
+        codeSnippets: [],
+        executionOutputs: [],
+        functionCalls: [],
+      };
     }
 
     // If we have content, extract URLs (markdown links and plain URLs) into sources
@@ -402,16 +442,18 @@ async function processGeminiResponse(response) {
           if (u[1]) result.sources.add(u[1]);
         }
       } catch (e) {
-        console.warn('URL extraction from content failed:', e?.message || e);
+        console.warn("URL extraction from content failed:", e?.message || e);
       }
 
       // Light cleanup while preserving markdown links so users can click them
       const originalLength = result.content.length;
       result.content = result.content
-        .replace(/\*\*\*.*?\*\*\*/g, '') // Remove triple-asterisk bold artifacts if any
-        .replace(/\n{3,}/g, '\n\n')       // Remove excessive newlines
+        .replace(/\*\*\*.*?\*\*\*/g, "") // Remove triple-asterisk bold artifacts if any
+        .replace(/\n{3,}/g, "\n\n") // Remove excessive newlines
         .trim();
-      console.log(`Content cleaned (links preserved): ${originalLength} -> ${result.content.length} chars`);
+      console.log(
+        `Content cleaned (links preserved): ${originalLength} -> ${result.content.length} chars`,
+      );
     }
 
     // Process sources with titles
@@ -420,32 +462,35 @@ async function processGeminiResponse(response) {
     // Execute function calls if any (e.g., Excalidraw flowchart generation)
     const excalidrawData = [];
     for (const functionCall of result.functionCalls) {
-      if (functionCall.name === 'generate_excalidraw_flowchart') {
+      if (functionCall.name === "generate_excalidraw_flowchart") {
         try {
-          console.log('Executing Excalidraw flowchart generation:', functionCall.args);
+          console.log(
+            "Executing Excalidraw flowchart generation:",
+            functionCall.args,
+          );
           const flowchartData = await generateExcalidrawFlowchart(
             functionCall.args.prompt,
             {
-              style: functionCall.args.style || 'modern',
-              complexity: functionCall.args.complexity || 'detailed'
-            }
+              style: functionCall.args.style || "modern",
+              complexity: functionCall.args.complexity || "detailed",
+            },
           );
           excalidrawData.push(flowchartData);
-          console.log('Excalidraw flowchart generated successfully');
+          console.log("Excalidraw flowchart generated successfully");
         } catch (error) {
-          console.error('Error generating Excalidraw flowchart:', error);
+          console.error("Error generating Excalidraw flowchart:", error);
           result.content += `\n\n[Note: Failed to generate flowchart: ${error.message}]`;
         }
       }
     }
 
-    console.log('Final processing result:', {
+    console.log("Final processing result:", {
       contentLength: result.content?.length || 0,
       sourcesCount: processedSources.length,
       hasValidContent,
       lastFinishReason,
       functionCallsCount: result.functionCalls.length,
-      excalidrawCount: excalidrawData.length
+      excalidrawCount: excalidrawData.length,
     });
 
     return {
@@ -454,71 +499,82 @@ async function processGeminiResponse(response) {
       codeSnippets: result.codeSnippets,
       executionOutputs: result.executionOutputs,
       functionCalls: result.functionCalls,
-      excalidrawData: excalidrawData.length > 0 ? excalidrawData : undefined
+      excalidrawData: excalidrawData.length > 0 ? excalidrawData : undefined,
     };
-
   } catch (error) {
-    console.error('Error processing Gemini response:', error);
+    console.error("Error processing Gemini response:", error);
     return {
       content: `Error processing response: ${error.message}`,
       sources: [],
       codeSnippets: [],
       executionOutputs: [],
-      functionCalls: []
+      functionCalls: [],
     };
   }
 }
 
-export function buildRequestBody(messages, systemPrompt = null, includeSearch = true) {
+export function buildRequestBody(
+  messages,
+  systemPrompt = null,
+  includeSearch = true,
+) {
   const body = {
     contents: messages,
 
     generationConfig: {
-      temperature: 0.1,  // Increased from 0 to make function calling more likely
+      temperature: 0.1, // Increased from 0 to make function calling more likely
       topP: 0.95,
       topK: 40,
       maxOutputTokens: CONFIG.MAX_OUTPUT_TOKENS,
       candidateCount: 1,
-      stopSequences: []
+      stopSequences: [],
     },
     safetySettings: [
       {
         category: "HARM_CATEGORY_HARASSMENT",
-        threshold: "BLOCK_ONLY_HIGH"
+        threshold: "BLOCK_ONLY_HIGH",
       },
       {
         category: "HARM_CATEGORY_HATE_SPEECH",
-        threshold: "BLOCK_ONLY_HIGH"
+        threshold: "BLOCK_ONLY_HIGH",
       },
       {
         category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        threshold: "BLOCK_ONLY_HIGH"
+        threshold: "BLOCK_ONLY_HIGH",
       },
       {
         category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-        threshold: "BLOCK_ONLY_HIGH"
-      }
-    ]
+        threshold: "BLOCK_ONLY_HIGH",
+      },
+    ],
   };
 
   // Add system instruction if provided
   if (systemPrompt) {
     // Ensure system instruction is given highest priority
     body.systemInstruction = {
-      role: 'system',
-      parts: [{
-        text: systemPrompt + "\n\nRemember: Follow all instructions exactly as given, including response formatting requirements."
-      }]
+      role: "system",
+      parts: [
+        {
+          text:
+            systemPrompt +
+            "\n\nRemember: Follow all instructions exactly as given, including response formatting requirements.",
+        },
+      ],
     };
 
     // Also add as the first message to reinforce the instruction
     if (body.contents && body.contents.length > 0) {
       body.contents = [
         {
-          role: 'user',
-          parts: [{ text: 'IMPORTANT: Follow all instructions in the system prompt exactly, including any required response formatting.' }]
+          role: "user",
+          parts: [
+            {
+              text: "IMPORTANT: Follow all instructions in the system prompt exactly, including any required response formatting.",
+            },
+          ],
         },
-        ...body.contents
+        ...body.contents,
       ];
     }
   }
@@ -529,29 +585,40 @@ export function buildRequestBody(messages, systemPrompt = null, includeSearch = 
   // with google_search can sometimes lead to "unsupported" errors even on Pro models.
   if (includeSearch) {
     body.tools.push({
-      google_search: {}
+      google_search: {},
     });
-    console.log(`[buildRequestBody] Enabling google_search (prioritized over function calling)`);
+    console.log(
+      `[buildRequestBody] Enabling google_search (prioritized over function calling)`,
+    );
   } else {
     // Only add Excalidraw if search is NOT enabled to avoid incompatibility errors
     body.tools.push({
-      function_declarations: [EXCALIDRAW_FUNCTION_DECLARATION]
+      function_declarations: [EXCALIDRAW_FUNCTION_DECLARATION],
     });
-    console.log(`[buildRequestBody] Enabling function_declarations (Excalidraw)`);
+    console.log(
+      `[buildRequestBody] Enabling function_declarations (Excalidraw)`,
+    );
   }
 
-  console.log(`Built request body (search: ${includeSearch}, model: ${MODEL_ID}):`, JSON.stringify(body, null, 2));
+  console.log(
+    `Built request body (search: ${includeSearch}, model: ${MODEL_ID}):`,
+    JSON.stringify(body, null, 2),
+  );
   return body;
 }
 
-async function fetchWithTimeout(url, options, timeout = CONFIG.REQUEST_TIMEOUT) {
+async function fetchWithTimeout(
+  url,
+  options,
+  timeout = CONFIG.REQUEST_TIMEOUT,
+) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal
+      signal: controller.signal,
     });
     return response;
   } finally {
@@ -564,35 +631,41 @@ const keyManager = new APIKeyManager(GEMINI_API_KEYS);
 
 async function parsePdfBuffer(buf) {
   try {
-    const mod = await import('pdf-parse');
+    const mod = await import("pdf-parse");
     const pdfParse = mod?.default || mod;
     const result = await pdfParse(buf);
-    return result?.text || '';
+    return result?.text || "";
   } catch (e) {
-    console.warn('pdf-parse not available or failed to parse PDF:', e?.message || e);
-    return '';
+    console.warn(
+      "pdf-parse not available or failed to parse PDF:",
+      e?.message || e,
+    );
+    return "";
   }
 }
 
 async function parseDocxBuffer(buf) {
   try {
-    const mod = await import('mammoth');
+    const mod = await import("mammoth");
     const mammoth = mod?.default || mod;
     const result = await mammoth.extractRawText({ buffer: Buffer.from(buf) });
-    return result?.value || '';
+    return result?.value || "";
   } catch (e) {
-    console.warn('mammoth not available or failed to parse DOCX:', e?.message || e);
-    return '';
+    console.warn(
+      "mammoth not available or failed to parse DOCX:",
+      e?.message || e,
+    );
+    return "";
   }
 }
 
 async function parseSpreadsheetBuffer(buf) {
   try {
-    const mod = await import('xlsx');
+    const mod = await import("xlsx");
     const XLSX = mod?.default || mod;
-    const wb = XLSX.read(buf, { type: 'buffer' });
+    const wb = XLSX.read(buf, { type: "buffer" });
     const sheetNames = wb.SheetNames || [];
-    let out = '';
+    let out = "";
     for (const name of sheetNames) {
       const ws = wb.Sheets[name];
       if (!ws) continue;
@@ -603,77 +676,104 @@ async function parseSpreadsheetBuffer(buf) {
     }
     return out.trim();
   } catch (e) {
-    console.warn('xlsx not available or failed to parse spreadsheet:', e?.message || e);
-    return '';
+    console.warn(
+      "xlsx not available or failed to parse spreadsheet:",
+      e?.message || e,
+    );
+    try {
+      const text = Buffer.from(buf || "").toString("utf8").trim();
+      return text;
+    } catch (_) {
+      return "";
+    }
   }
 }
 
 export async function extractTextFromUploads(files = []) {
-  if (!Array.isArray(files) || files.length === 0) return '';
+  if (!Array.isArray(files) || files.length === 0) return "";
   const parts = [];
   const MAX_TOTAL_CHARS = 50000;
   let total = 0;
   for (const f of files) {
     try {
-      const name = f.originalname || 'file';
-      const mime = f.mimetype || '';
+      const name = f.originalname || "file";
+      const mime = f.mimetype || "";
       const buf = f.buffer;
       if (!buf || !Buffer.isBuffer(buf)) continue;
 
-      let text = '';
-      if (mime === 'application/pdf') {
+      let text = "";
+      if (mime === "application/pdf") {
         text = await parsePdfBuffer(buf);
-      } else if (mime.startsWith('text/')) {
-        text = Buffer.from(buf).toString('utf8');
-      } else if (mime === 'text/markdown') {
-        text = Buffer.from(buf).toString('utf8');
-      } else if (mime === 'text/html') {
-        text = Buffer.from(buf).toString('utf8');
-      } else if (mime === 'application/json') {
-        text = Buffer.from(buf).toString('utf8');
-      } else if (mime === 'application/rtf') {
-        text = Buffer.from(buf).toString('utf8');
-      } else if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // .docx
+      } else if (mime.startsWith("text/")) {
+        text = Buffer.from(buf).toString("utf8");
+      } else if (mime === "text/markdown") {
+        text = Buffer.from(buf).toString("utf8");
+      } else if (mime === "text/html") {
+        text = Buffer.from(buf).toString("utf8");
+      } else if (mime === "application/json") {
+        text = Buffer.from(buf).toString("utf8");
+      } else if (mime === "application/rtf") {
+        text = Buffer.from(buf).toString("utf8");
+      } else if (
+        mime ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        // .docx
         text = await parseDocxBuffer(buf);
-      } else if (mime === 'application/msword') { // .doc legacy
-        console.warn('Legacy .doc files are not supported for text extraction. Consider converting to .docx');
-        text = '';
-      } else if (mime === 'text/csv') {
-        text = Buffer.from(buf).toString('utf8');
-      } else if (mime === 'application/vnd.ms-excel' || mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') { // .xls/.xlsx
+      } else if (mime === "application/msword") {
+        // .doc legacy
+        console.warn(
+          "Legacy .doc files are not supported for text extraction. Consider converting to .docx",
+        );
+        text = "";
+      } else if (mime === "text/csv") {
+        text = Buffer.from(buf).toString("utf8");
+      } else if (
+        mime === "application/vnd.ms-excel" ||
+        mime ===
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      ) {
+        // .xls/.xlsx
         text = await parseSpreadsheetBuffer(buf);
-      } else if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || mime === 'application/vnd.ms-powerpoint') { // .pptx/.ppt
-        console.warn('PowerPoint files are accepted but text extraction is not implemented.');
-        text = '';
+      } else if (
+        mime ===
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+        mime === "application/vnd.ms-powerpoint"
+      ) {
+        // .pptx/.ppt
+        console.warn(
+          "PowerPoint files are accepted but text extraction is not implemented.",
+        );
+        text = "";
       } else {
-        const lower = (name || '').toLowerCase();
-        if (!text && lower.endsWith('.pdf')) {
+        const lower = (name || "").toLowerCase();
+        if (!text && lower.endsWith(".pdf")) {
           text = await parsePdfBuffer(buf);
-        } else if (lower.endsWith('.docx')) {
+        } else if (lower.endsWith(".docx")) {
           text = await parseDocxBuffer(buf);
-        } else if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+        } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
           text = await parseSpreadsheetBuffer(buf);
         } else {
-          text = '';
+          text = "";
         }
       }
 
       if (text) {
         const remaining = Math.max(0, MAX_TOTAL_CHARS - total);
-        const snippet = text.length > remaining ? text.slice(0, remaining) : text;
+        const snippet =
+          text.length > remaining ? text.slice(0, remaining) : text;
         if (snippet.length > 0) {
           parts.push(`--- Uploaded: ${name} ---\n\n${snippet}\n\n`);
           total += snippet.length;
         }
         if (total >= MAX_TOTAL_CHARS) {
-          console.warn('Total extracted text truncated to MAX_TOTAL_CHARS');
+          console.warn("Total extracted text truncated to MAX_TOTAL_CHARS");
           break;
         }
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
-  return parts.join('');
+  return parts.join("");
 }
 
 export async function extractImagesFromUploads(files = []) {
@@ -681,12 +781,12 @@ export async function extractImagesFromUploads(files = []) {
   const images = [];
   for (const f of files) {
     try {
-      const mime = f?.mimetype || '';
-      if (!mime.startsWith('image/')) continue;
-      const name = f.originalname || 'image';
+      const mime = f?.mimetype || "";
+      if (!mime.startsWith("image/")) continue;
+      const name = f.originalname || "image";
       const buf = f.buffer;
       if (!buf || !Buffer.isBuffer(buf)) continue;
-      const data = Buffer.from(buf).toString('base64');
+      const data = Buffer.from(buf).toString("base64");
       images.push({ name, mimeType: mime, data });
     } catch (_) {
       /* ignore single file errors */
@@ -708,27 +808,28 @@ export async function extractImagesFromUploads(files = []) {
  */
 export async function generateContent(
   prompt,
-  userId = 'default',
-  options = {}
+  userId = "default",
+  options = {},
 ) {
-  console.log('generateContent called with:', { prompt, userId, options });
-
+  console.log("generateContent called with:", { prompt, userId, options });
 
   const startTime = Date.now();
 
   try {
     // Select the appropriate system prompt based on expert type
-    const expertType = (options.expert || 'research').toLowerCase();
+    const expertType = (options.expert || "research").toLowerCase();
     const customSystemPrompt = options.systemPrompt;
     let selectedSystemPrompt = customSystemPrompt;
 
     if (!selectedSystemPrompt) {
       const promptEntry = EXPERT_PROMPTS[expertType] || EXPERT_PROMPTS.default;
-      if (typeof promptEntry === 'function') {
+      if (typeof promptEntry === "function") {
         try {
-          selectedSystemPrompt = promptEntry({ username: options.username || 'User' });
+          selectedSystemPrompt = promptEntry({
+            username: options.username || "User",
+          });
         } catch (_) {
-          selectedSystemPrompt = '';
+          selectedSystemPrompt = "";
         }
       } else {
         selectedSystemPrompt = promptEntry;
@@ -745,14 +846,14 @@ export async function generateContent(
     const uploadedText = await extractTextFromUploads(options.uploads);
     const uploadedImages = await extractImagesFromUploads(options.uploads);
     if (options.uploads && options.uploads.length) {
-      console.log('Uploads provided to generateContent:', {
+      console.log("Uploads provided to generateContent:", {
         total: options.uploads.length,
         textChars: uploadedText ? uploadedText.length : 0,
-        imagesCount: uploadedImages.length
+        imagesCount: uploadedImages.length,
       });
     }
 
-    let composedPrompt = prompt || '';
+    let composedPrompt = prompt || "";
     if (uploadedText) {
       composedPrompt += `\n\n--- Uploaded Files Text ---\n${uploadedText}`;
     }
@@ -765,21 +866,29 @@ export async function generateContent(
       }
     }
     if (uploadedImages.length) {
-      console.log(`Attached ${uploadedImages.length} image(s) to the user message as inlineData.`);
+      console.log(
+        `Attached ${uploadedImages.length} image(s) to the user message as inlineData.`,
+      );
     }
 
     const userMessage = {
-      role: 'user',
-      parts
+      role: "user",
+      parts,
     };
 
     let messages = [...userHistory, userMessage];
 
     // Ensure we don't exceed max history length and only include valid roles
-    const validMessages = messages.filter(m => m.role === 'user' || m.role === 'model');
+    const validMessages = messages.filter(
+      (m) => m.role === "user" || m.role === "model",
+    );
     messages = validMessages.slice(-(CONFIG.MAX_HISTORY_LENGTH * 2));
 
-    const requestBody = buildRequestBody(messages, selectedSystemPrompt, options.includeSearch !== false);
+    const requestBody = buildRequestBody(
+      messages,
+      selectedSystemPrompt,
+      options.includeSearch !== false,
+    );
     let lastError = null;
     let attemptsCount = 0;
     const maxAttempts = Math.min(GEMINI_API_KEYS.length * 2, 5); // Limit total attempts
@@ -789,57 +898,71 @@ export async function generateContent(
       const keyInfo = keyManager.getNextAvailableKey();
 
       if (!keyInfo) {
-        lastError = new Error('All API keys are currently unavailable');
+        lastError = new Error("All API keys are currently unavailable");
         break;
       }
 
       attemptsCount++;
-      console.log(`Attempt ${attemptsCount}/${maxAttempts} using API key index: ${keyInfo.index}`);
+      console.log(
+        `Attempt ${attemptsCount}/${maxAttempts} using API key index: ${keyInfo.index}`,
+      );
 
       try {
         const url = `${BASE_URL}/${MODEL_ID}:${GENERATE_CONTENT_API}?key=${keyInfo.key}`;
 
         const response = await fetchWithTimeout(url, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Research-Assistant/1.0'
+            "Content-Type": "application/json",
+            "User-Agent": "Research-Assistant/1.0",
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
         });
 
         // Log response details for debugging
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        console.log("Response status:", response.status);
+        console.log(
+          "Response headers:",
+          Object.fromEntries(response.headers.entries()),
+        );
 
-        const data = await response.json().catch(err => {
-          console.error('Failed to parse response as JSON:', err);
-          return { error: { message: 'Invalid JSON response' } };
+        const data = await response.json().catch((err) => {
+          console.error("Failed to parse response as JSON:", err);
+          return { error: { message: "Invalid JSON response" } };
         });
 
-        console.log('Raw response data:', JSON.stringify(data, null, 2));
+        console.log("Raw response data:", JSON.stringify(data, null, 2));
 
         if (!response.ok) {
-          const errorMessage = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+          const errorMessage =
+            data?.error?.message ||
+            `HTTP ${response.status}: ${response.statusText}`;
           const error = new Error(errorMessage);
 
           // Handle retryable errors or specific quota/resource exhausted messages
           // Gemini sometimes matches these patterns even if status isn't strictly 429
           const isQuotaError =
             response.status === 429 ||
-            errorMessage.toLowerCase().includes('quota') ||
-            errorMessage.toLowerCase().includes('exhausted') ||
-            errorMessage.toLowerCase().includes('resource has been exhausted');
+            errorMessage.toLowerCase().includes("quota") ||
+            errorMessage.toLowerCase().includes("exhausted") ||
+            errorMessage.toLowerCase().includes("resource has been exhausted");
 
           if (isQuotaError || RETRYABLE_STATUS_CODES.has(response.status)) {
-            console.warn(`Retryable error (${response.status} - ${errorMessage}), trying next key...`);
+            console.warn(
+              `Retryable error (${response.status} - ${errorMessage}), trying next key...`,
+            );
 
             // Mark key as failed for a simpler 1 minute if it's just a flake, or 5 mins if quota
-            keyManager.markKeyFailed(keyInfo.index, isQuotaError ? 300000 : 60000);
+            keyManager.markKeyFailed(
+              keyInfo.index,
+              isQuotaError ? 300000 : 60000,
+            );
             keyManager.rotateKey();
 
             if (attemptsCount < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY * attemptsCount));
+              await new Promise((resolve) =>
+                setTimeout(resolve, CONFIG.RETRY_DELAY * attemptsCount),
+              );
               continue;
             }
           }
@@ -852,18 +975,21 @@ export async function generateContent(
 
         // Check if we got empty content and handle it
         if (!result.content || result.content.trim().length === 0) {
-          console.warn('Received empty content from API');
+          console.warn("Received empty content from API");
 
           // If we have attempts left and this might be a temporary issue, retry
           if (attemptsCount < maxAttempts) {
-            console.log('Retrying due to empty content...');
+            console.log("Retrying due to empty content...");
             keyManager.rotateKey();
-            await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
+            await new Promise((resolve) =>
+              setTimeout(resolve, CONFIG.RETRY_DELAY),
+            );
             continue;
           } else {
             // Last attempt - return with helpful message
-            result.content = 'No content generated. This might be due to safety filters or the prompt being too restrictive.';
-            result.warning = 'EMPTY_CONTENT';
+            result.content =
+              "No content generated. This might be due to safety filters or the prompt being too restrictive.";
+            result.warning = "EMPTY_CONTENT";
           }
         }
 
@@ -876,13 +1002,16 @@ export async function generateContent(
 
           // Add assistant response
           updatedHistory.push({
-            role: 'model',
-            parts: [{ text: result.content }]
+            role: "model",
+            parts: [{ text: result.content }],
           });
 
           // Maintain history size
           if (updatedHistory.length > CONFIG.MAX_HISTORY_LENGTH * 2) {
-            updatedHistory.splice(0, updatedHistory.length - (CONFIG.MAX_HISTORY_LENGTH * 2));
+            updatedHistory.splice(
+              0,
+              updatedHistory.length - CONFIG.MAX_HISTORY_LENGTH * 2,
+            );
           }
 
           chatHistory.set(userId, updatedHistory);
@@ -893,45 +1022,50 @@ export async function generateContent(
         result.processingTime = Date.now() - startTime;
         result.attempts = attemptsCount;
 
-        console.log(`Request completed successfully in ${result.processingTime}ms`);
+        console.log(
+          `Request completed successfully in ${result.processingTime}ms`,
+        );
         return result;
-
       } catch (error) {
         lastError = error;
         console.error(`Attempt ${attemptsCount} failed:`, error.message);
 
         // For non-retryable errors, break immediately
-        if (!error.message.includes('timeout') && !error.message.includes('fetch')) {
+        if (
+          !error.message.includes("timeout") &&
+          !error.message.includes("fetch")
+        ) {
           break;
         }
 
         keyManager.rotateKey();
 
         if (attemptsCount < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY * attemptsCount));
+          await new Promise((resolve) =>
+            setTimeout(resolve, CONFIG.RETRY_DELAY * attemptsCount),
+          );
         }
       }
     }
 
     // All attempts failed
-    console.error('All attempts failed:', lastError);
+    console.error("All attempts failed:", lastError);
     return {
-      content: `Error: ${lastError?.message || 'All API attempts failed'}`,
+      content: `Error: ${lastError?.message || "All API attempts failed"}`,
       sources: [],
       timestamp: new Date().toISOString(),
       processingTime: Date.now() - startTime,
       attempts: attemptsCount,
-      error: 'API_FAILURE'
+      error: "API_FAILURE",
     };
-
   } catch (error) {
-    console.error('Unexpected error in generateContent:', error);
+    console.error("Unexpected error in generateContent:", error);
     return {
       content: `Unexpected error: ${error.message}`,
       sources: [],
       timestamp: new Date().toISOString(),
       processingTime: Date.now() - startTime,
-      error: 'UNEXPECTED_ERROR'
+      error: "UNEXPECTED_ERROR",
     };
   }
 }
@@ -950,7 +1084,7 @@ export function getAPIKeyStatus() {
     totalKeys: GEMINI_API_KEYS.length,
     currentKeyIndex: keyManager.currentIndex,
     failedKeys: Array.from(keyManager.failedKeys),
-    availableKeys: GEMINI_API_KEYS.length - keyManager.failedKeys.size
+    availableKeys: GEMINI_API_KEYS.length - keyManager.failedKeys.size,
   };
 }
 
@@ -963,6 +1097,6 @@ export function clearTitleCache() {
 export function getTitleCacheStats() {
   return {
     size: titleCache.size,
-    entries: Array.from(titleCache.entries())
+    entries: Array.from(titleCache.entries()),
   };
 }

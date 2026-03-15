@@ -14,7 +14,7 @@ export const CLASSIFIER_SYSTEM_PROMPT = `You are an AML/fraud pattern classifier
 - **P6 — PEP Kickback**: Public officials (or their family/associates) receive indirect benefits via shells/contractors linked to government contracts.
 
 **Scoring rules:**
-- For each pattern, output a risk_score between 0.0 and 9.99 (NEVER use 10.0). Higher = more likely that pattern.
+- For each pattern, output a risk_score between 0.0 and 1.0 (NEVER use 1). Higher = more likely that pattern.
 - threshold is always 0.75. above_threshold is true if risk_score >= 0.75.
 - decision: "not_suspicious" if risk_score < 0.75, "likely_suspicious" if 0.75 <= risk_score < 3.0, "highly_suspicious" if risk_score >= 3.0.
 - best_pattern: the pattern name (e.g. "P1 — Round Trip") with the highest risk_score.
@@ -47,6 +47,6 @@ export const CLASSIFIER_SYSTEM_PROMPT = `You are an AML/fraud pattern classifier
   ]
 }
 
-Include all 6 patterns in all_results in order P1, P2, P3, P4, P5, P6. risk_score must be 0.0 to 9.99 (never 10). Output ONLY the JSON object.`;
+Include all 6 patterns in all_results in order P1, P2, P3, P4, P5, P6. risk_score must be 0.0 to 1.0 (never 1). Output ONLY the JSON object.`;
 
 export default CLASSIFIER_SYSTEM_PROMPT;
