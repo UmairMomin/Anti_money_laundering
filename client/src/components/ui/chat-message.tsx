@@ -88,6 +88,181 @@ const BlinkingCursor = () => (
   />
 )
 
+type PatternResult = {
+  pattern: string
+  risk_score: number
+  threshold: number
+  above_threshold: boolean
+  decision: "not_suspicious" | "likely_suspicious" | "highly_suspicious"
+  top_features: string[]
+}
+
+type ClassifyResponse = {
+  best_pattern: string
+  best_risk_score: number
+  best_threshold: number
+  best_above_threshold: boolean
+  best_decision: PatternResult["decision"]
+  all_results: PatternResult[]
+}
+
+function isClassifyResponse(d: unknown): d is ClassifyResponse {
+  return (
+    typeof d === "object" &&
+    d !== null &&
+    "best_pattern" in d &&
+    "all_results" in d &&
+    Array.isArray((d as ClassifyResponse).all_results)
+  )
+}
+
+const DECISION_STYLE: Record<PatternResult["decision"], { label: string; className: string }> = {
+  not_suspicious: { label: "Not suspicious", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" },
+  likely_suspicious: { label: "Likely suspicious", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" },
+  highly_suspicious: { label: "Highly suspicious", className: "bg-destructive/15 text-destructive border-destructive/30" },
+}
+
+function ClassificationResponseBlock({ data }: { data: unknown }) {
+  if (data == null) return null
+  const isError = typeof data === "object" && data !== null && "error" in data
+  const errorMsg = isError && typeof (data as { error?: unknown }).error === "string" ? (data as { error: string }).error : null
+
+  if (isError && errorMsg) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="mt-4 rounded-xl border border-destructive/50 bg-destructive/5 overflow-hidden"
+      >
+        <div className="px-3 py-2 border-b border-border/50 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-destructive shrink-0" />
+          <span className="text-sm font-semibold text-foreground">Classification error</span>
+        </div>
+        <div className="p-3">
+          <p className="text-sm text-destructive">{errorMsg}</p>
+        </div>
+      </motion.div>
+    )
+  }
+
+  if (!isClassifyResponse(data)) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="mt-4 rounded-xl border border-border/50 bg-muted/30 overflow-hidden"
+      >
+        <div className="px-3 py-2 border-b border-border/50 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-semibold text-foreground">Classification result</span>
+        </div>
+        <div className="p-3 min-h-[60px]">
+          <pre className="text-xs font-mono text-foreground/90 whitespace-pre-wrap break-words overflow-x-auto max-h-[320px] overflow-y-auto rounded-lg bg-background/60 p-3 border border-border/40">
+            {typeof data === "string" ? data : JSON.stringify(data, null, 2)}
+          </pre>
+        </div>
+      </motion.div>
+    )
+  }
+
+  const res = data as ClassifyResponse
+  const bestStyle = DECISION_STYLE[res.best_decision] ?? DECISION_STYLE.not_suspicious
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="mt-4 rounded-xl border border-border/50 bg-gradient-to-b from-muted/40 to-muted/20 overflow-hidden shadow-sm"
+    >
+      <div className="px-4 py-2.5 border-b border-border/50 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm font-semibold text-foreground">Classification result</span>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Best match card */}
+        <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 space-y-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Best match</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-lg font-bold text-foreground">{res.best_pattern}</span>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                bestStyle.className
+              )}
+            >
+              {bestStyle.label}
+            </span>
+            {res.best_above_threshold && (
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Above threshold</span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-muted-foreground">Risk score</span>
+              <span className="font-semibold tabular-nums text-foreground">{res.best_risk_score.toFixed(2)}</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-muted-foreground">Threshold</span>
+              <span className="font-semibold tabular-nums text-foreground">{res.best_threshold.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* All patterns */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">All patterns</p>
+          <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+            {res.all_results.map((r, i) => {
+              const style = DECISION_STYLE[r.decision] ?? DECISION_STYLE.not_suspicious
+              const isBest = r.pattern === res.best_pattern
+              return (
+                <div
+                  key={`${r.pattern}-${i}`}
+                  className={cn(
+                    "rounded-lg border p-3 space-y-2 transition-colors",
+                    isBest ? "border-primary/40 bg-primary/5" : "border-border/50 bg-background/60"
+                  )}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-sm text-foreground">{r.pattern}</span>
+                    {isBest && <span className="text-[10px] font-medium text-primary uppercase">Best</span>}
+                    <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", style.className)}>
+                      {style.label}
+                    </span>
+                    <span className="text-muted-foreground text-xs tabular-nums ml-auto">
+                      Risk {r.risk_score.toFixed(2)} / {r.threshold.toFixed(2)}
+                      {r.above_threshold && " ↑"}
+                    </span>
+                  </div>
+                  {r.top_features && r.top_features.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {r.top_features.slice(0, 5).map((f, j) => (
+                        <span
+                          key={`${f}-${j}`}
+                          className="inline-flex items-center rounded-md bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                        >
+                          {f}
+                        </span>
+                      ))}
+                      {r.top_features.length > 5 && (
+                        <span className="text-[10px] text-muted-foreground">+{r.top_features.length - 5}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 type Animation = VariantProps<typeof chatBubbleVariants>["animation"]
 
 interface Attachment {
@@ -218,6 +393,8 @@ export interface Message {
   mlPayload?: Record<string, unknown> | null
   mlPattern?: string | null
   mlSampleId?: string | null
+  /** Response from POST /classify when ML payload was sent for classification */
+  classificationResponse?: unknown
 }
 
 export interface ImageResult {
@@ -256,6 +433,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   mlPayload,
   mlPattern,
   mlSampleId,
+  classificationResponse,
 }) => {
   const files = useMemo(() => {
     return experimental_attachments?.map((attachment) => {
@@ -819,7 +997,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="mt-4"
+            className="mt-4 space-y-4"
           >
             <p className="text-xs font-medium text-muted-foreground mb-2">ML schema graph</p>
             <MlPayloadGraphViewer
@@ -830,6 +1008,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               className="w-full"
             />
           </motion.div>
+        )}
+        {classificationResponse != null && (
+          <ClassificationResponseBlock data={classificationResponse} />
         )}
         {resolvedChartUrls.length > 0 && (
           <>

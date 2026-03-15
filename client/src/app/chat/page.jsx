@@ -473,7 +473,23 @@ export default function ChatPage() {
           try {
             const data = await mlRes.json()
             const mid = assistantMessageIdRef.current
-            if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: data.payload, mlPattern: data.pattern, mlSampleId: data.sample_id } : msg))
+            const payload = data.payload
+            const pattern = data.pattern
+            const sampleId = data.sample_id
+            if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
+            if (mid && payload && pattern) {
+              try {
+                const classifyRes = await fetch("/api/classify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ pattern, sample: payload }),
+                })
+                const classificationResponse = classifyRes.ok ? await classifyRes.json() : { error: classifyRes.statusText || "Classification failed" }
+                if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse } : msg))
+              } catch (classifyErr) {
+                if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: classifyErr?.message || "Classification request failed" } } : msg))
+              }
+            }
           } catch (_) {}
         }).catch(() => {})
       }
