@@ -8,18 +8,19 @@ import { STOCK_EXPERT_PROMPT } from "../prompts/stockexpert.js";
 import { RETIREMENT_TAX_EXPERT_PROMPT } from "../prompts/retierment_tax_expert.js";
 import { MEDISETU_PROMPT } from "../prompts/doc.js";
 import { generateExcalidrawFlowchart } from "./groq.js";
+import { buildAmlAssistantPrompt } from "../prompts/FinancialAI.js";
 
 import env from "../config/env.js";
 
 // Map of expert types to their corresponding prompts
 const EXPERT_PROMPTS = {
-  'research': MEDISETU_PROMPT,
+  'research': buildAmlAssistantPrompt(),
   'real-estate': REAL_ESTATE_EXPERT_PROMPT,
   'crypto': CRYPTO_EXPERT_PROMPT,
   'investment': INVESTMENT_EXPERT_PROMPT,
   'stock': STOCK_EXPERT_PROMPT,
   'retirement-tax': RETIREMENT_TAX_EXPERT_PROMPT,
-  'default': MEDISETU_PROMPT,
+  'default': buildAmlAssistantPrompt(),
 };
 
 const GEMINI_API_KEYS = [

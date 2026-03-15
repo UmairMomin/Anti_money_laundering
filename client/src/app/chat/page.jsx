@@ -28,11 +28,10 @@ import { toast } from "sonner"
 import { TTSButton } from "@/components/ui/tts-button"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
-import { SERVER_URL_1, SERVER_URL, CLASSIFY_API_URL } from "@/utils/commonHelper"
+import { SERVER_URL_1, SERVER_URL } from "@/utils/commonHelper"
 
 // Call Luna backend (5001) and other services directly — no Next.js API proxy
 const LUNA_CHAT_BASE = `${SERVER_URL_1}/api/chat`
-const CLASSIFY_ENDPOINT = `${(CLASSIFY_API_URL || "").replace(/\/$/, "")}/classify`
 const CHARTS_ENDPOINT = `${SERVER_URL}/api/gemini/charts`
 
 function normalizeImageResults(raw) {
@@ -478,26 +477,18 @@ export default function ChatPage() {
         })
       }
 
-      const classifySample = async (sample, pattern, mid) => {
-        if (!mid || !sample) return
+      const classifySample = async (sample, mid) => {
+        if (!mid || !sample || typeof sample !== "object") return
         try {
-          const normalizedSample = Array.isArray(sample)
-            ? { transactions: sample }
-            : sample
-          const inferredPattern =
-            typeof pattern === "string" && pattern.trim()
-              ? pattern.trim()
-              : "P1"
-          const body = { pattern: inferredPattern, sample: normalizedSample }
-          const classifyRes = await fetch(CLASSIFY_ENDPOINT, {
+          const res = await fetch(`${LUNA_CHAT_BASE}/classify`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify({ sample }),
           })
-          const classificationResponse = classifyRes.ok ? await classifyRes.json() : { error: classifyRes.statusText || "Classification failed" }
+          const classificationResponse = res.ok ? await res.json() : { error: res.statusText || "Classification failed" }
           if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse } : msg))
-        } catch (classifyErr) {
-          if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: classifyErr?.message || "Classification request failed" } } : msg))
+        } catch (err) {
+          if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: err?.message || "Classification request failed" } } : msg))
         }
       }
 
@@ -511,10 +502,7 @@ export default function ChatPage() {
             const pattern = data.pattern
             const sampleId = data.sample_id
             if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
-            if (mid && payload && typeof payload === "object") {
-              const inferredPattern = (typeof pattern === "string" && pattern.trim()) ? pattern.trim() : (payload.sample_id && String(payload.sample_id).match(/^P(\d)/) ? `P${String(payload.sample_id).match(/^P(\d)/)[1]}` : "P1")
-              void classifySample(payload, inferredPattern, mid)
-            }
+            if (mid && payload && typeof payload === "object") void classifySample(payload, mid)
           } catch (_) {}
         }).catch(() => {})
       }
@@ -568,9 +556,6 @@ export default function ChatPage() {
             }
           } else if (currentEvent === "transactions" && parsed.transactions) {
             hasGeminiTransactions = true
-            if (assistantMessageId) {
-              void classifySample(parsed.transactions, parsed.pattern, assistantMessageId)
-            }
           } else if (currentEvent === "images" && parsed.images && Array.isArray(parsed.images)) {
             const normalized = normalizeImageResults(parsed.images)
             if (normalized) { streamedImages = normalized; setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, images: normalized } : msg)) }

@@ -88,6 +88,8 @@ const BlinkingCursor = () => (
   />
 )
 
+type Animation = VariantProps<typeof chatBubbleVariants>["animation"]
+
 type PatternResult = {
   pattern: string
   risk_score: number
@@ -179,40 +181,33 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
     >
       <div className="px-4 py-2.5 border-b border-border/50 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm font-semibold text-foreground">Classification result</span>
+        <span className="text-sm font-semibold text-foreground">Pattern classification (score 0–10, threshold 0.75)</span>
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Best match card */}
         <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 space-y-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Best match</p>
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-lg font-bold text-foreground">{res.best_pattern}</span>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                bestStyle.className
-              )}
-            >
+            <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold", bestStyle.className)}>
               {bestStyle.label}
             </span>
-            {/* {res.best_above_threshold && (
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Above threshold</span>
-            )} */}
           </div>
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap gap-4 text-sm items-baseline">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-muted-foreground">Risk score</span>
-              <span className="font-semibold tabular-nums text-foreground">{res.best_risk_score.toFixed(2)}</span>
+              <span className="text-muted-foreground">Score</span>
+              <span className="font-bold tabular-nums text-foreground">{res.best_risk_score.toFixed(2)} / 10</span>
             </div>
-            {/* <div className="flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5">
               <span className="text-muted-foreground">Threshold</span>
-              <span className="font-semibold tabular-nums text-foreground">{res.best_threshold.toFixed(2)}</span>
-            </div> */}
+              <span className="font-semibold tabular-nums text-foreground">{res.best_threshold}</span>
+            </div>
+            {res.best_above_threshold && (
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Above threshold</span>
+            )}
           </div>
         </div>
 
-        {/* All patterns */}
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">All patterns</p>
           <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
@@ -233,7 +228,7 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
                     <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", style.className)}>
                       {style.label}
                     </span>
-                    
+                    <span className="ml-auto font-mono text-sm tabular-nums text-foreground">{r.risk_score.toFixed(2)} / 10</span>
                   </div>
                   {r.top_features && r.top_features.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
@@ -259,8 +254,6 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
     </motion.div>
   )
 }
-
-type Animation = VariantProps<typeof chatBubbleVariants>["animation"]
 
 interface Attachment {
   name?: string
@@ -390,7 +383,7 @@ export interface Message {
   mlPayload?: Record<string, unknown> | null
   mlPattern?: string | null
   mlSampleId?: string | null
-  /** Response from POST /classify when ML payload was sent for classification */
+  /** Classifier result: best pattern and scores 0–10 (threshold 0.75) */
   classificationResponse?: unknown
 }
 

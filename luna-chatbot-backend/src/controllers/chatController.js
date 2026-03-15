@@ -17,6 +17,7 @@ import env from "../config/env.js";
 import { processMermaidBlocks } from "../helpers/mermaid.js";
 import { runFeatherlessChat } from "../helpers/featherless.js";
 import { generateMlSchema } from "../helpers/mlSchemaGenerator.js";
+import { classifyAmlSample } from "../helpers/amlClassifier.js";
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 const FEATHERLESS_MODEL = env.FEATHERLESS_MODEL || "Qwen/Qwen2.5-32B-Instruct";
@@ -1277,6 +1278,29 @@ export async function handleMlGenerate(req, res) {
     console.error("Error in handleMlGenerate:", error);
     res.status(500).json({
       error: error.message || "ML schema generation failed",
+    });
+  }
+}
+
+/**
+ * Classify an AML sample against P1–P6 patterns. Scores 0.0–9.99 (never 10), threshold 0.75.
+ * POST body: { sample: object } (ML schema payload from ml-generate).
+ * Response: { best_pattern, best_risk_score, best_threshold, best_above_threshold, best_decision, all_results }.
+ */
+export async function handleClassify(req, res) {
+  try {
+    const { sample } = req.body || {};
+    const payload = Array.isArray(sample) ? { transactions: sample } : sample;
+    if (!payload || typeof payload !== "object") {
+      return res.status(400).json({ error: "Sample payload is required" });
+    }
+
+    const result = await classifyAmlSample(payload);
+    return res.json(result);
+  } catch (error) {
+    console.error("Error in handleClassify:", error);
+    res.status(500).json({
+      error: error.message || "Classification failed",
     });
   }
 }

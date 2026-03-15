@@ -1,7 +1,7 @@
 import express from 'express';
 import { uploadArray } from "../middleware/upload.js";
 import { authenticate, requireAuth } from "../middleware/auth.js";
-import { handleChatGenerate, handleChatStreamGenerate, getConversations, getConversationHistory, deleteConversation, handleMlGenerate } from "../controllers/chatController.js";
+import { handleChatGenerate, handleChatStreamGenerate, getConversations, getConversationHistory, deleteConversation, handleMlGenerate, handleClassify } from "../controllers/chatController.js";
 
 const router = express.Router();
 
@@ -13,6 +13,9 @@ router.post('/stream', authenticate, requireAuth, uploadArray, handleChatStreamG
 
 // Generate ML-ready JSON (P1–P6 format) from user prompt via Groq for the ML model
 router.post('/ml-generate', authenticate, requireAuth, handleMlGenerate);
+
+// Classify AML sample against P1–P6 patterns (scores 0–10, threshold 0.75)
+router.post('/classify', authenticate, requireAuth, handleClassify);
 
 // Get all conversations for the authenticated user
 router.get('/conversations', authenticate, requireAuth, getConversations);
