@@ -28,6 +28,12 @@ import { toast } from "sonner"
 import { TTSButton } from "@/components/ui/tts-button"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
+import { SERVER_URL_1, SERVER_URL, CLASSIFY_API_URL } from "@/utils/commonHelper"
+
+// Call Luna backend (5001) and other services directly — no Next.js API proxy
+const LUNA_CHAT_BASE = `${SERVER_URL_1}/api/chat`
+const CLASSIFY_ENDPOINT = `${(CLASSIFY_API_URL || "").replace(/\/$/, "")}/classify`
+const CHARTS_ENDPOINT = `${SERVER_URL}/api/gemini/charts`
 
 function normalizeImageResults(raw) {
   if (!Array.isArray(raw)) return undefined
@@ -55,6 +61,7 @@ function applyMermaidReplacements(content, blocks) {
     return acc
   }, content)
 }
+
 
 const HeroBackdropCanvas = () => {
   const canvasRef = useRef(null)
@@ -286,7 +293,7 @@ export default function ChatPage() {
   const loadConversations = useCallback(async () => {
     setIsHistoryLoading(true)
     try {
-      const response = await fetch("/api/public/chat/conversations")
+      const response = await fetch(`${LUNA_CHAT_BASE}/conversations`)
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(errorText || "Failed to load conversations")
@@ -372,7 +379,7 @@ export default function ChatPage() {
     setIsHistoryOpen(false)
     setIsProfileOpen(false)
     try {
-      const response = await fetch(`/api/public/chat/conversations/${conversationId}`)
+      const response = await fetch(`${LUNA_CHAT_BASE}/conversations/${conversationId}`)
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(errorText || "Failed to load conversation")
@@ -395,7 +402,7 @@ export default function ChatPage() {
     event?.preventDefault()
     event?.stopPropagation()
     try {
-      const response = await fetch(`/api/public/chat/conversations/${conversationId}`, { method: "DELETE" })
+      const response = await fetch(`${LUNA_CHAT_BASE}/conversations/${conversationId}`, { method: "DELETE" })
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(errorText || "Failed to delete conversation")
@@ -440,7 +447,7 @@ export default function ChatPage() {
 
       const promptText = typeof userContent === "string" ? userContent.trim() : ""
       const mlPromise = promptText
-        ? fetch("/api/public/chat/ml-generate", {
+        ? fetch(`${LUNA_CHAT_BASE}/ml-generate`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
             body: JSON.stringify({ prompt: promptText }),
@@ -453,13 +460,13 @@ export default function ChatPage() {
         formData.append("prompt", userContent)
         formData.append("options", JSON.stringify({ includeYouTube, includeImageSearch }))
         Array.from(attachments).forEach((file) => formData.append("files", file, file.name))
-        response = await fetch("/api/public/chat/stream", {
+        response = await fetch(`${LUNA_CHAT_BASE}/stream`, {
           method: "POST",
           body: formData,
           signal: abortControllerRef.current.signal,
         })
       } else {
-        response = await fetch("/api/public/chat/stream", {
+        response = await fetch(`${LUNA_CHAT_BASE}/stream`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: userContent, options: { includeYouTube, includeImageSearch } }),
@@ -479,7 +486,7 @@ export default function ChatPage() {
             if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
             if (mid && payload && pattern) {
               try {
-                const classifyRes = await fetch("/api/classify", {
+                const classifyRes = await fetch(CLASSIFY_ENDPOINT, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ pattern, sample: payload }),
@@ -605,7 +612,7 @@ export default function ChatPage() {
       if (!abortControllerRef.current?.signal.aborted && chartsConversationId) {
         setAssistantStatuses((prev) => ({ ...prev, charting: "active" }))
         try {
-          const chartsResponse = await fetch("/api/proxy/charts", {
+          const chartsResponse = await fetch(CHARTS_ENDPOINT, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
             body: JSON.stringify({ prompt: userContent, conversationId: chartsConversationId, options: { includeSearch: true, includeYouTube } }),

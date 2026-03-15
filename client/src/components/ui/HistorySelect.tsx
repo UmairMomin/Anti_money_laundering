@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ChevronDown } from "lucide-react"
 import { Button } from "./button"
+import { SERVER_URL_1 } from "@/utils/commonHelper"
+
+const LUNA_CONVERSATIONS_URL = `${SERVER_URL_1}/api/chat/conversations`
 
 interface Conversation {
   id: string
@@ -33,7 +36,7 @@ export function HistorySelect({ currentId }: { currentId?: string }) {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const response = await fetch("/api/proxy/conversations")
+        const response = await fetch(LUNA_CONVERSATIONS_URL)
         if (!response.ok) throw new Error("Failed to fetch conversations")
         const data = await response.json()
         const sortedConversations = data.sort(
