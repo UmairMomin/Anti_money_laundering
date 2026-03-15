@@ -194,6 +194,8 @@ async function buildTransactionContextFromUploads(files = []) {
     rawRows: rows,
     contextText,
     rowCount: rows.length,
+    structured,
+    scored,
   };
 }
 
@@ -730,6 +732,13 @@ export async function handleChatStreamGenerate(req, res) {
     res.write(
       `data: ${JSON.stringify({ conversationId: currentConversationId })}\n\n`,
     );
+
+    if (transactionContext?.structured) {
+      res.write(`event: transactions\n`);
+      res.write(
+        `data: ${JSON.stringify({ transactions: transactionContext.structured })}\n\n`,
+      );
+    }
 
     if (imageResults.length > 0) {
       res.write(`event: images\n`);

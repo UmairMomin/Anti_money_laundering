@@ -445,6 +445,8 @@ export default function ChatPage() {
       const conversationId = currentConversationId
       abortControllerRef.current = new AbortController()
 
+      let hasGeminiTransactions = false
+
       const promptText = typeof userContent === "string" ? userContent.trim() : ""
       const mlPromise = promptText
         ? fetch(`${LUNA_CHAT_BASE}/ml-generate`, {
@@ -474,6 +476,29 @@ export default function ChatPage() {
         })
       }
 
+      const classifySample = async (sample, pattern, mid) => {
+        if (!mid || !sample) return
+        try {
+          const normalizedSample = Array.isArray(sample)
+            ? { transactions: sample }
+            : sample
+          const inferredPattern =
+            typeof pattern === "string" && pattern.trim()
+              ? pattern.trim()
+              : "P1"
+          const body = { pattern: inferredPattern, sample: normalizedSample }
+          const classifyRes = await fetch(CLASSIFY_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          })
+          const classificationResponse = classifyRes.ok ? await classifyRes.json() : { error: classifyRes.statusText || "Classification failed" }
+          if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse } : msg))
+        } catch (classifyErr) {
+          if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: classifyErr?.message || "Classification request failed" } } : msg))
+        }
+      }
+
       if (mlPromise) {
         mlPromise.then(async (mlRes) => {
           if (!mlRes?.ok) return
@@ -484,19 +509,9 @@ export default function ChatPage() {
             const pattern = data.pattern
             const sampleId = data.sample_id
             if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
-            if (mid && payload && pattern) {
-              try {
-                const classifyRes = await fetch(CLASSIFY_ENDPOINT, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ pattern, sample: payload }),
-                })
-                const classificationResponse = classifyRes.ok ? await classifyRes.json() : { error: classifyRes.statusText || "Classification failed" }
-                if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse } : msg))
-              } catch (classifyErr) {
-                if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: classifyErr?.message || "Classification request failed" } } : msg))
-              }
-            }
+            // Only classify when we receive Gemini-sourced transactions via SSE.
+            // ML-generate payloads are for visualization and should not be sent to the classify API.
+            if (hasGeminiTransactions) return
           } catch (_) {}
         }).catch(() => {})
       }
@@ -547,6 +562,11 @@ export default function ChatPage() {
                 setMessages((prev) => prev.map((msg) => msg.id === assistantMessageId ? { ...msg, content: streamedContent, createdAt: new Date(), isComplete: false } : msg))
                 pendingUpdate = false
               }, 50)
+            }
+          } else if (currentEvent === "transactions" && parsed.transactions) {
+            hasGeminiTransactions = true
+            if (assistantMessageId) {
+              void classifySample(parsed.transactions, parsed.pattern, assistantMessageId)
             }
           } else if (currentEvent === "images" && parsed.images && Array.isArray(parsed.images)) {
             const normalized = normalizeImageResults(parsed.images)
