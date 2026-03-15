@@ -196,19 +196,19 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
             >
               {bestStyle.label}
             </span>
-            {res.best_above_threshold && (
+            {/* {res.best_above_threshold && (
               <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Above threshold</span>
-            )}
+            )} */}
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-baseline gap-1.5">
               <span className="text-muted-foreground">Risk score</span>
               <span className="font-semibold tabular-nums text-foreground">{res.best_risk_score.toFixed(2)}</span>
             </div>
-            <div className="flex items-baseline gap-1.5">
+            {/* <div className="flex items-baseline gap-1.5">
               <span className="text-muted-foreground">Threshold</span>
               <span className="font-semibold tabular-nums text-foreground">{res.best_threshold.toFixed(2)}</span>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -233,10 +233,7 @@ function ClassificationResponseBlock({ data }: { data: unknown }) {
                     <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", style.className)}>
                       {style.label}
                     </span>
-                    <span className="text-muted-foreground text-xs tabular-nums ml-auto">
-                      Risk {r.risk_score.toFixed(2)} / {r.threshold.toFixed(2)}
-                      {r.above_threshold && " ↑"}
-                    </span>
+                    
                   </div>
                   {r.top_features && r.top_features.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">

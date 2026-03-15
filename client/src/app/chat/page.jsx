@@ -448,11 +448,13 @@ export default function ChatPage() {
       let hasGeminiTransactions = false
 
       const promptText = typeof userContent === "string" ? userContent.trim() : ""
-      const mlPromise = promptText
+      const hasAttachments = attachments && attachments.length > 0
+      const mlPrompt = promptText || (hasAttachments ? "Generate a single AML/fraud pattern sample (P1-P6) from transaction or entity data." : "")
+      const mlPromise = mlPrompt
         ? fetch(`${LUNA_CHAT_BASE}/ml-generate`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-            body: JSON.stringify({ prompt: promptText }),
+            body: JSON.stringify({ prompt: mlPrompt }),
           }).catch((err) => { console.warn("ML generate parallel call failed:", err); return null })
         : null
 
@@ -509,9 +511,10 @@ export default function ChatPage() {
             const pattern = data.pattern
             const sampleId = data.sample_id
             if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, mlPayload: payload, mlPattern: pattern, mlSampleId: sampleId } : msg))
-            // Only classify when we receive Gemini-sourced transactions via SSE.
-            // ML-generate payloads are for visualization and should not be sent to the classify API.
-            if (hasGeminiTransactions) return
+            if (mid && payload && typeof payload === "object") {
+              const inferredPattern = (typeof pattern === "string" && pattern.trim()) ? pattern.trim() : (payload.sample_id && String(payload.sample_id).match(/^P(\d)/) ? `P${String(payload.sample_id).match(/^P(\d)/)[1]}` : "P1")
+              void classifySample(payload, inferredPattern, mid)
+            }
           } catch (_) {}
         }).catch(() => {})
       }

@@ -97,25 +97,26 @@ export function MlPayloadGraphViewer({
     const linkG = g.append("g").attr("class", "link-layer");
     const nodeG = g.append("g").attr("class", "node-layer");
 
-    const nodeData = nodes.map((n) => ({ ...n }));
+    type NodeDatum = { id: string; label: string; group: string; size?: number; tooltip?: string; x?: number; y?: number; fx?: number | null; fy?: number | null };
+    const nodeData = nodes.map((n) => ({ ...n })) as NodeDatum[];
     const nodeIds = new Set(nodeData.map((n) => n.id));
     const linkData = links
       .filter((l) => nodeIds.has(String(l.source)) && nodeIds.has(String(l.target)))
       .map((l) => ({ ...l, source: l.source as string, target: l.target as string }));
 
     const simulation = d3
-      .forceSimulation(nodeData)
+      .forceSimulation(nodeData as d3.SimulationNodeDatum[])
       .force(
         "links",
         d3
           .forceLink(linkData)
-          .id((d: { id: string }) => d.id)
-          .distance(100)
-          .strength((d: { strength?: number }) => d.strength ?? 0.5)
+          .id((d) => (d as NodeDatum).id)
+          .distance(160)
+          .strength((d: { strength?: number }) => d.strength ?? 0.4)
       )
-      .force("charge", d3.forceManyBody().strength(-220))
+      .force("charge", d3.forceManyBody().strength(-320))
       .force("center", d3.forceCenter(W / 2, H / 2))
-      .force("collide", d3.forceCollide().radius((d: { size?: number }) => (d.size ?? 8) + 14))
+      .force("collide", d3.forceCollide().radius((d) => ((d as NodeDatum).size ?? 8) + 32))
       .alphaDecay(0.02);
 
     simulationRef.current = simulation;
@@ -134,23 +135,26 @@ export function MlPayloadGraphViewer({
       .attr("stroke-width", (d) => Math.max(1, Math.min(3.5, (d.weight ?? 1) * 1.5)))
       .attr("marker-end", "url(#ml-graph-arrow)");
 
-    linkSel
+    const linkLabelG = linkSel.append("g").attr("class", "link-label-wrap").attr("pointer-events", "none");
+    linkLabelG.append("rect").attr("class", "link-label-bg").attr("rx", 3).attr("ry", 3);
+    linkLabelG
       .append("text")
       .attr("class", "link-label")
       .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
       .attr("font-size", "9px")
       .attr("fill", "var(--muted-foreground)")
       .attr("font-weight", "500")
       .text((d) => d.label || "");
 
     const nodeSel = nodeG
-      .selectAll<SVGGElement, (typeof nodeData)[0]>("g.node")
+      .selectAll<SVGGElement, NodeDatum>("g.node")
       .data(nodeData, (d) => d.id)
       .join("g")
       .attr("class", "node cursor-grab active:cursor-grabbing")
       .call(
         d3
-          .drag<SVGGElement, (typeof nodeData)[0]>()
+          .drag<SVGGElement, NodeDatum>()
           .on("start", (event, d) => {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
@@ -178,16 +182,27 @@ export function MlPayloadGraphViewer({
 
     nodeSel.append("title").text((d) => (d.tooltip ? `${d.label}\n\n${d.tooltip}` : d.label));
 
-    nodeSel
+    const labelG = nodeSel.append("g").attr("class", "node-label-wrap").attr("pointer-events", "none");
+    labelG
+      .append("rect")
+      .attr("class", "node-label-bg")
+      .attr("rx", 4)
+      .attr("ry", 4)
+      .attr("fill", "var(--background)")
+      .attr("stroke", "var(--border)")
+      .attr("stroke-width", 1);
+    labelG
       .append("text")
+      .attr("class", "node-label-text")
       .attr("text-anchor", "middle")
-      .attr("dy", (d) => (d.size ?? 10) + 15)
-      .attr("font-size", "10px")
+      .attr("dominant-baseline", "middle")
+      .attr("font-size", "11px")
       .attr("font-weight", "600")
       .attr("fill", "var(--foreground)")
-      .attr("class", "pointer-events-none")
-      .attr("style", "text-shadow: 0 0 8px var(--background);")
-      .text((d) => d.label);
+      .text((d) => {
+        const s = d.label || "";
+        return s.length > 24 ? s.slice(0, 22) + "…" : s;
+      });
 
     simulation.on("tick", () => {
       linkSel
@@ -196,14 +211,46 @@ export function MlPayloadGraphViewer({
         .attr("y1", (d) => (d.source as { y?: number }).y ?? 0)
         .attr("x2", (d) => (d.target as { x?: number }).x ?? 0)
         .attr("y2", (d) => (d.target as { y?: number }).y ?? 0);
-      linkSel
-        .select(".link-label")
-        .attr("x", (d) => ((d.source as { x?: number }).x! + (d.target as { x?: number }).x!) / 2)
-        .attr("y", (d) => ((d.source as { y?: number }).y! + (d.target as { y?: number }).y!) / 2 - 4);
-      nodeSel.attr(
-        "transform",
-        (d) => `translate(${d.x ?? 0},${d.y ?? 0})`
-      );
+      const linkMidX = (d: (typeof linkData)[0]) => ((d.source as { x?: number }).x! + (d.target as { x?: number }).x!) / 2;
+      const linkMidY = (d: (typeof linkData)[0]) => ((d.source as { y?: number }).y! + (d.target as { y?: number }).y!) / 2;
+      linkSel.select(".link-label").attr("x", (d) => linkMidX(d)).attr("y", (d) => linkMidY(d));
+      linkSel.each(function (d) {
+        const g = d3.select(this);
+        const textEl = g.select<SVGTextElement>(".link-label").node();
+        const rect = g.select<SVGRectElement>(".link-label-bg");
+        if (textEl) {
+          const b = textEl.getBBox();
+          const pad = 4;
+          const mx = linkMidX(d);
+          const my = linkMidY(d);
+          rect
+            .attr("x", mx - b.width / 2 - pad)
+            .attr("y", my - b.height / 2 - pad)
+            .attr("width", b.width + pad * 2)
+            .attr("height", b.height + pad * 2)
+            .attr("fill", "var(--background)")
+            .attr("opacity", 0.95);
+        }
+      });
+      nodeSel.attr("transform", (d) => `translate(${(d as NodeDatum).x ?? 0},${(d as NodeDatum).y ?? 0})`);
+      nodeSel.each(function (d) {
+        const g = d3.select(this);
+        const r = d.size ?? 10;
+        const labelG = g.select<SVGGElement>(".node-label-wrap");
+        const textEl = g.select<SVGTextElement>(".node-label-text").node();
+        const rect = g.select<SVGRectElement>(".node-label-bg");
+        labelG.attr("transform", `translate(0,${r + 12})`);
+        if (textEl) {
+          const b = textEl.getBBox();
+          const padX = 8;
+          const padY = 4;
+          rect
+            .attr("x", -b.width / 2 - padX)
+            .attr("y", -b.height / 2 - padY)
+            .attr("width", b.width + padX * 2)
+            .attr("height", b.height + padY * 2);
+        }
+      });
     });
 
     simulation.alpha(1).restart();
