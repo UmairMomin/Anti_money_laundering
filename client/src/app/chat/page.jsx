@@ -486,6 +486,8 @@ export default function ChatPage() {
             body: JSON.stringify({ sample }),
           })
           const classificationResponse = res.ok ? await res.json() : { error: res.statusText || "Classification failed" }
+          const renderDelayMs = 450 + Math.floor(Math.random() * 700)
+          await new Promise((resolve) => setTimeout(resolve, renderDelayMs))
           if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse } : msg))
         } catch (err) {
           if (mid) setMessages((prev) => prev.map((msg) => msg.id === mid ? { ...msg, classificationResponse: { error: err?.message || "Classification request failed" } } : msg))
