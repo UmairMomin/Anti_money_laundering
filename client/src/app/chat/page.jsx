@@ -548,7 +548,7 @@ export default function ChatPage() {
       const classifySample = async (sample, mid) => {
         if (!mid || !sample || typeof sample !== "object") return
         try {
-          const res = await fetch(`${LUNA_CHAT_BASE}/classify`, {
+          const res = await fetch(`${"http://localhost:8000"}/classify`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
             body: JSON.stringify({ sample }),
