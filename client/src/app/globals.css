@@ -131,6 +131,9 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   * {
     @apply border-border;
   }
@@ -166,6 +169,10 @@
   *::-webkit-scrollbar-corner {
     background: var(--muted);
     border-radius: 0 0 var(--radius) 0;
+  }
+
+  section[id] {
+    scroll-margin-top: 6rem;
   }
 }
 
@@ -298,6 +305,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .animate-idle-float,
   .animate-glow-pulse {
     animation: none;
